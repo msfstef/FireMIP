@@ -1,0 +1,70 @@
+from netCDF4 import Dataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+data = Dataset('/group/slm212/FireMIP/OtherModels/JSBACH_SF1_fFirepft.nc', 
+                'r', format = 'NETCDF4')
+grid_data = Dataset('/group/slm212/FireMIP/OtherModels/JSBACH_grid.nc', 
+                    'r', format = 'NETCDF4')
+    
+def get_cell_emissions_monthly(time, latitude, longitude):
+    net_emis_density_list = []
+    #for i in range(len(data["vegtype"])):
+    for i in range(len([0])):
+        emis_density_rate=data["fFirepft"][time][i][latitude][longitude]
+        days = data["time"][time+1] - data["time"][time]
+        emis_density = emis_density_rate * days*86400
+        net_emis_density_list.append(emis_density)
+    net_emis_density = np.nanmean(net_emis_density_list)
+    
+    return net_emis_density
+    
+def get_global_emissions_monthly(time):
+    emis_rate_data = np.prod([data["fFirepft"][time], grid_data["area"]], axis = 0)
+    emis_rate = np.sum(emis_rate_data, axis=0).mean()
+    days = data["time"][time+1] - data["time"][time]
+    emissions = emis_rate*days*86400
+    return emissions
+    
+def get_global_emissions_yearly(year):
+    emissions = 0
+    for i in range(12):
+        emissions += get_global_emissions_monthly(year*12 + i)
+    return emissions 
+    
+def plot_global_emissions_monthly():
+    x_data = range(len(data["time"])-1)
+    y_data = []
+    for x in x_data:
+        print x/float(len(x_data))
+        y_data.append(get_global_emissions_monthly(x))
+    plt.plot(x_data, y_data)
+    plt.show()
+    print "success"
+   
+
+def plot_global_emissions_yearly(no_years=0):
+    years = int(len(data["time"])/12)
+    x_data = range(years-1)
+    x_data_plot = [x+1700 for x in x_data]
+    y_data = []
+    for x in x_data[-no_years:]:
+        print("%.2f" % ((x-x_data[-no_years])/
+                float(len(x_data[-no_years:]))))
+        y_data.append(get_global_emissions_yearly(x))
+    plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
+               label='JSBACH Results')
+    plt.ylabel('Carbon Emitted ($Pg/year$)')
+    plt.xlabel('Year')
+    plt.legend()
+    plt.show()
+    print "success"
+   
+
+
+
+#print get_global_emissions_monthly(0)*12
+#print get_cell_emissions_monthly(0,28,5)
+#plot_global_emissions_monthly()
+plot_global_emissions_yearly(14)
+#print get_global_emissions_yearly(132)
