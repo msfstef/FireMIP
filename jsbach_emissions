@@ -21,7 +21,7 @@ def get_cell_emissions_monthly(time, latitude, longitude):
     
 def get_global_emissions_monthly(time):
     emis_rate_data = np.prod([data["fFirepft"][time], grid_data["area"]], axis = 0)
-    emis_rate = np.sum(emis_rate_data, axis=0).mean()
+    emis_rate = np.sum(emis_rate_data)
     days = data["time"][time+1] - data["time"][time]
     emissions = emis_rate*days*86400
     return emissions
@@ -51,7 +51,7 @@ def plot_global_emissions_yearly(no_years=0):
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
                 float(len(x_data[-no_years:]))))
-        y_data.append(get_global_emissions_yearly(x))
+        y_data.append(get_global_emissions_yearly(x)/(10**12))
     plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
                label='JSBACH Results')
     plt.ylabel('Carbon Emitted ($Pg/year$)')
@@ -61,10 +61,8 @@ def plot_global_emissions_yearly(no_years=0):
     print "success"
    
 
-
-
 #print get_global_emissions_monthly(0)*12
 #print get_cell_emissions_monthly(0,28,5)
 #plot_global_emissions_monthly()
-plot_global_emissions_yearly(14)
+plot_global_emissions_yearly()
 #print get_global_emissions_yearly(132)
