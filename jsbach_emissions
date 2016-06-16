@@ -1,6 +1,8 @@
 from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+
 
 data_JSBACH = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc', 
                 'r', format = 'NETCDF4')
@@ -96,9 +98,25 @@ def plot_global_emissions_yearly(data, grid_data, no_years=0):
     plt.legend()
     plt.show()
     print "success"
+    
+
+
+def plot_map(data):
+    lats = data["latitude"]
+    lons = data["longitude"]
+    emis_data = data["fFirepft"][0][0]
+    lons, lats = np.meshgrid(lons, lats)
+
+    fig=plt.figure()
+    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, urcrnrlon=180,urcrnrlat=80,projection='mill')
+    m.drawcoastlines()
+    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
+    plt.show()
+        
+    
 
 #print data_CLM["fFirepft"]
-#print data_JSBACH["fFirepft"]
+#print data_JSBACH
 #print data_CTEM["fFirepft"]
 #print grid_data_CTEM["landmask"]
 #print grid_data_JSBACH["area"]
@@ -107,8 +125,10 @@ def plot_global_emissions_yearly(data, grid_data, no_years=0):
 #print data_LPJ_BLAZE["Cfire.monthly"]
 #print data_LPJ_Globfirm["fFirepft"]
 #print data_LPJ_SPITFIRE["fFirepft"]
+
+plot_map(data_JSBACH)
        
 #print get_global_emissions_monthly(0)*12
-#plot_global_emissions_monthly(data, grid_data, 100)
-#plot_global_emissions_yearly(data_Inferno, grid_data_JSBACH,40)
+#plot_global_emissions_monthly(data_JSBACH, grid_data_JSBACH, 100)
+#plot_global_emissions_yearly(data_JSBACH, grid_data_JSBACH,40)
 #print get_global_emissions_yearly(132)
