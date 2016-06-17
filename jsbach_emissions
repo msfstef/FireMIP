@@ -64,6 +64,19 @@ def get_global_emissions_yearly(year, data, grid_data):
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
     emissions = np.sum(emis_per_month)
     return emissions
+
+def get_grid_emissions(year_start, period, data, grid_data):
+    time = year_start*12
+    days_per_month = []
+    for i in range(period):
+        days_per_month.append(data["time"][time+i+1]-data["time"][time+i])
+    sec_per_month = np.multiply(days_per_month, 86400)
+    emis_rate_data = np.prod([data["fFirepft"][time:time+period], grid_data["area"]], axis = 0)
+    emis_per_month = np.multiply(emis_rate_data, 
+                sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
+    emissions_pft = np.sum(emis_per_month, axis = 0)
+    emissions = np.sum(emissions_pft, axis = 0)
+    return emissions
    
     
 def plot_global_emissions_monthly(data, grid_data, no_months=0):
@@ -98,19 +111,22 @@ def plot_global_emissions_yearly(data, grid_data, no_years=0):
     plt.legend()
     plt.show()
     print "success"
-    
 
-
-def plot_map(data):
+def plot_map_period(year_start, period, data, grid_data):
+    map_data = get_grid_emissions(year_start,period,data,grid_data)
     lats = data["latitude"]
     lons = data["longitude"]
-    emis_data = data["fFirepft"][0][0]
+    emis_data = map_data
     lons, lats = np.meshgrid(lons, lats)
 
     fig=plt.figure()
     m = Basemap(llcrnrlon=-180,llcrnrlat=-60, urcrnrlon=180,urcrnrlat=80,projection='mill')
     m.drawcoastlines()
+    m.drawparallels(np.arange(-90.,91.,30.))
+    m.drawmeridians(np.arange(-180.,181.,60.))
+    m.drawmapboundary(fill_color='aqua')
     cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
+    plt.title("Emission Rates, JSBACH")
     plt.show()
         
     
@@ -126,7 +142,8 @@ def plot_map(data):
 #print data_LPJ_Globfirm["fFirepft"]
 #print data_LPJ_SPITFIRE["fFirepft"]
 
-plot_map(data_JSBACH)
+plot_map_period(0,200,data_JSBACH,grid_data_JSBACH)
+#print get_grid_emissions(0,12,data_JSBACH,grid_data_JSBACH)
        
 #print get_global_emissions_monthly(0)*12
 #plot_global_emissions_monthly(data_JSBACH, grid_data_JSBACH, 100)
