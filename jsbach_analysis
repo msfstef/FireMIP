@@ -125,7 +125,7 @@ def plot_map_period(year_start, year_period, data, grid_data):
 
 #print data_CLM["fFirepft"]
 #print grid_data_CLM["area"]
-#print np.max(data_JSBACH["fFirepft"][0:12])
+#print data_JSBACH["fFirepft"]
 #print np.sum(grid_data_CTEM["landmask"][0])
 #print grid_data_CTEM
 #print grid_data_JSBACH["area"]
@@ -141,4 +141,4 @@ def plot_map_period(year_start, year_period, data, grid_data):
 #print get_global_emissions_monthly(3002, data_JSBACH, grid_data_JSBACH)
 #plot_global_emissions_monthly(data_JSBACH, grid_data_JSBACH, 100)
 #plot_global_emissions_yearly(data_JSBACH, grid_data_JSBACH,30)
-#print get_global_emissions_yearly(0, data_JSBACH, grid_data_JSBACH)
+print get_global_emissions_yearly(0, data_JSBACH, grid_data_JSBACH)

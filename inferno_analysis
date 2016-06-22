@@ -108,10 +108,10 @@ def plot_map_period(year_start, year_period, data, grid_data, landmask, landCove
 #print landCover_Inferno
 #print data_Inferno["fFirepft"][0:12, 8].shape
 
-#plot_map_period(0,312,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
+plot_map_period(185,1,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
 #print get_grid_emissions(300,12,data_JSBACH,grid_data_JSBACH)
 
 #print get_global_emissions_monthly(0, data_Inferno, grid_data_Inferno, landmask_Inferno)
 #plot_global_emissions_monthly(100, data_Inferno, grid_data_Inferno, landmask_Inferno)
-plot_global_emissions_yearly(200,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
+#plot_global_emissions_yearly(200,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
 #print get_global_emissions_yearly(188, data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
