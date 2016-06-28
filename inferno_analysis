@@ -118,7 +118,7 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landmask, la
 #plot_FC_map_period(300,6 , emis_Inferno, BA_Inferno, landmask_Inferno, landCover_Inferno)
 #plot_global_FC_yearly(30, emis_CLM, BA_CLM, landCover_CLM, time_data)
 #plot_global_mean_FC_yearly(200, emis_Inferno, BA_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)
-print get_global_mean_FC_yearly(300,emis_Inferno,BA_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)
+#print get_global_mean_FC_yearly(300,emis_Inferno,BA_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)
 
 
 #

@@ -102,8 +102,7 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landCover_da
     plt.show()
     
 #print get_global_FC_yearly(300, emis_CLM, BA_CLM, landCover_CLM)
-#plot_FC_map_period(140,6 , emis_CTEM,BA_CTEM,landCover_CTEM)
-#plot_global_FC_yearly(30, emis_CLM, BA_CLM, landCover_CLM)
+#plot_FC_map_period(140,1 , emis_CTEM,BA_CTEM,landCover_CTEM)
 #plot_global_mean_FC_yearly(20, emis_CTEM,BA_CTEM,grid_CTEM, landCover_CTEM)
 #print get_global_mean_FC_yearly(150,emis_CTEM,BA_CTEM,grid_CTEM, landCover_CTEM)
 
@@ -143,7 +142,7 @@ def get_global_emissions_monthly(month, emis_data, grid_data, landCover_data):
    
     
 def plot_global_emissions_monthly(no_months, emis_data, grid_data, landCover_data):
-    x_data = range(len(data["time"])-1)
+    x_data = range(len(emis_data["time"])-1)
     y_data = []
     for x in x_data[-no_months:]:
         print("%.2f" % ((x-x_data[-no_months])/

@@ -60,9 +60,17 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data):
     
     # Ignore division by zero warning. Returns NaN.
     np.seterr(divide='ignore')
+    
+    BA = (np.array(BA_JSBACH["burntArea"][time:time+month_period]))
+    # Remove fill values.
+    BA[BA>10**10] = 0
+    inverse_BA = 1./BA
+    # Remove infinities due to division by 0.
+    inverse_BA[inverse_BA == np.inf] = 0
+    
 
     FC_data = np.multiply(emis_data["fFirepft"][time:time+month_period], 
-                           1./BA_data["burntArea"][time:time+month_period])                     
+                           inverse_BA)                     
 
     FC_per_month = np.multiply(FC_data, 
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
@@ -151,12 +159,12 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data):
     plt.title("Fuel Consumption, JSBACH")
     plt.show()
     
-   
+ 
 #print plot_global_mean_FC_yearly(20, emis_JSBACH, BA_JSBACH, grid_JSBACH)
 #plot_FC_map_period(300, 5, emis_JSBACH, BA_JSBACH)
 #print get_global_mean_FC_yearly(300, emis_JSBACH, BA_JSBACH, grid_JSBACH)
 
-    
+
 #
 # Carbon Emissions Analysis
 #
@@ -190,12 +198,12 @@ def get_global_emissions_monthly(month, emis_data, grid_data):
    
     
 def plot_global_emissions_monthly(no_months, emis_data, grid_data):
-    x_data = range(len(data["time"])-1)
+    x_data = range(len(emis_data["time"])-1)
     y_data = []
     for x in x_data[-no_months:]:
         print("%.2f" % ((x-x_data[-no_months])/
                 float(len(x_data[-no_months:]))))
-        y_data.append(get_global_FC_monthly(x, emis_data, grid_data))
+        y_data.append(get_global_emissions_monthly(x, emis_data, grid_data))
     plt.plot(x_data[-no_months:], y_data, color='r', linewidth=2.0,
                label='JSBACH Results')
     plt.ylabel('Carbon Emitted ($Pg/month$)')
@@ -205,14 +213,14 @@ def plot_global_emissions_monthly(no_months, emis_data, grid_data):
    
 
 def plot_global_emissions_yearly(no_years, emis_data, grid_data):
-    years = int(len(data["time"])/12)
+    years = int(len(emis_data["time"])/12)
     x_data = range(years-1)
     x_data_plot = [x+1700 for x in x_data]
     y_data = []
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
                 float(len(x_data[-no_years:]))))
-        y_data.append(get_global_FC_yearly(x, emis_data, grid_data)/(10**12))
+        y_data.append(get_global_emissions_yearly(x, emis_data, grid_data)/(10**12))
     plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
                label='JSBACH Results')
     plt.ylabel('Carbon Emitted ($Pg/year$)')
@@ -244,19 +252,6 @@ def plot_emissions_map_period(year_start, year_period, emis_data, grid_data):
     plt.title("Total Emissions, JSBACH")
     plt.show()
         
-    
-
-#print data_CLM["fFirepft"]
-#print grid_data_CLM["area"]
-#print BA_data_JSBACH["burntArea"]
-#print np.sum(grid_data_CTEM["landmask"][0])
-#print grid_data_CTEM
-#print grid_data_JSBACH["area"]
-#print data_Inferno["time"][0]
-#print data_MC2
-#print data_LPJ_BLAZE["time"][2]
-#print data_LPJ_Globfirm["fFirepft"]
-#print data_LPJ_SPITFIRE
 
 #plot_map_period(297,15,data_JSBACH,grid_data_JSBACH)
 #print get_grid_emissions(300,12,data_JSBACH,grid_data_JSBACH)
