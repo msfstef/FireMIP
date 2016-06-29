@@ -2,17 +2,20 @@ from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
-                    
-emis_CTEM = Dataset('../../model_data/CTEM_S1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-BA_CTEM = Dataset('../../model_data/CTEM_S1_burntArea.nc', 
-                'r', format = 'NETCDF4')                
-grid_CTEM = Dataset('../../model_data/CTEM-gridarea.nc', 
-                    'r', format = 'NETCDF4')
-landCover_CTEM = Dataset('../../model_data/CTEM_S1_landCoverFrac.nc',
-                    'r', format = 'NETCDF4')
 
-                               
+
+emis_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_fFirepft.nc', 
+                'r', format = 'NETCDF4')
+BA_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_burntArea.nc', 
+                'r', format = 'NETCDF4')            
+grid_SPITFIRE = Dataset('../../model_data/HalfDegree-gridarea.nc', 
+                    'r', format = 'NETCDF4')
+landCover_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_landCoverFrac.nc', 
+                    'r', format = 'NETCDF4')                    
+
+# LPJ BLAZE has no useful separate time data, must use JSBACH data which matches it.             
+time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc', 
+                'r', format = 'NETCDF4')
 
 #
 # Fuel Consumption Analysis
@@ -71,7 +74,7 @@ def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, landCove
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
                 float(len(x_data[-no_years:]))))
-        y_data.append(get_global_mean_FC_yearly(x,emis_data,BA_data,grid_data,landCover_data))
+        y_data.append(get_global_mean_FC_yearly(x,emis_data,BA_data,grid_data,landCover_data,))
     plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
                label='CTEM Results')
     plt.ylabel('Fuel Consumption ($kg\, C / m^2 \, burned$)')
@@ -111,7 +114,7 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landCover_da
 # Carbon Emissions Analysis
 #
 
-                
+
 def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover_data):
     time = int(year_start*12)
     days_per_month = []
@@ -121,13 +124,15 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     
     # Ignore overflow warning.
     np.seterr(over='ignore')
+    
+    # Get rid of pfts, structure of data inconvenient.
+    emis_data = np.sum(emis_data["fFirepft"][time:time+month_period], axis=3)
+    #landCover_data = np.sum(landCover_data["landCoverFrac"][year_start:int(year_start+month_period/12.),:,:,:13], axis=3)
        
-    complete_area_data = np.multiply(landCover_data["landCoverFrac"][time:time+month_period], grid_data["cell_area"])
-    emis_rate_data = np.multiply(emis_data["fFirepft"][time:time+month_period, :9], complete_area_data)
-    emis_per_month = np.multiply(emis_rate_data, 
-                sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
-    emissions_pft = np.sum(emis_per_month, axis = 0)
-    emissions = np.sum(emissions_pft, axis = 0)
+    #complete_area_data = np.multiply(landCover_data, grid_data["cell_area"])
+    emis_rate_data = np.multiply(emis_data, grid_data["cell_area"])
+    emis_per_month = np.multiply(emis_rate_data, sec_per_month[:, np.newaxis, np.newaxis])
+    emissions = np.sum(emis_per_month, axis = 0)
     return emissions
 
 def get_global_emissions_yearly(year, emis_data, grid_data, landCover_data):
@@ -149,7 +154,7 @@ def plot_global_emissions_monthly(no_months, emis_data, grid_data, landCover_dat
                 float(len(x_data[-no_months:]))))
         y_data.append(get_global_emissions_monthly(x, emis_data, grid_data)/(10**12))
     plt.plot(x_data[-no_months:], y_data, color='r', linewidth=2.0,
-               label='CTEM Results')
+               label='LPJ SPITFIRE Results')
     plt.ylabel('Carbon Emitted ($Pg/month$)')
     plt.xlabel('Month')
     plt.legend()
@@ -166,7 +171,7 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data)
                 float(len(x_data[-no_years:]))))
         y_data.append(get_global_emissions_yearly(x, emis_data, grid_data, landCover_data)/(10**12))
     plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
-               label='CTEM Results')
+               label='LPJ SPITFIRE Results')
     plt.ylabel('Carbon Emitted ($Pg/year$)')
     plt.xlabel('Year')
     plt.legend()
@@ -177,7 +182,6 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     map_data = get_grid_emissions(year_start,month_period, emis_data, grid_data, landCover_data)
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
-    map_data = emis_data["fFirepft"][1000][10]
     
     lats = grid_data["lat"]
     lons = grid_data["lon"]
@@ -193,7 +197,9 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
     cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
     cb.set_label("Billions of kg of Carbon")
-    plt.title("Total Emissions, CTEM")
+    plt.title("Total Emissions, LPJ SPITFIRE")
     plt.show()
     
-#print get_global_emissions_yearly(146,emis_CTEM,grid_CTEM, landCover_CTEM)
+#print get_global_emissions_yearly(312,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+#plot_map_period(300,12,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+

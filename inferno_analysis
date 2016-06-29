@@ -14,6 +14,19 @@ landmask_Inferno = Dataset('../../model_data/CRU-NCEP-LandMask.nc',
 landCover_Inferno = Dataset('../../model_data/Inferno_S1_LandCoverFrac.nc4',
                     'r', format = 'NETCDF4')
 
+#a=landmask_Inferno["lsm"]                    
+#a=landCover_Inferno["LandCoverFrac"][300*12:301*12]
+#a=BA_Inferno["burntArea"][300*12:301*12]
+#a = np.array(a)
+#a[a>10**10]=0
+#print len(a[a>0.7])
+#print len(a[a>0.1])
+#print len(a[a>=0])
+#print len(a[a<0])
+#print a.size
+
+                    
+
 #
 # Fuel Consumption Analysis
 #
@@ -41,16 +54,13 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     
     # Possibly convert to decimals and multiply by landCover (?)
     BA = BA_data["burntArea"][time:time+month_period]
+    BA[BA<0]=0
     actual_BA = np.divide(BA, 100)
     actual_BA = np.multiply(actual_BA, actual_landCover_data)
-
-    actual_BA[actual_BA<0.] = 0
-    actual_BA[actual_BA>1.] = 0
     inverse_BA = 1./actual_BA
     
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
-    inverse_BA[inverse_BA == -np.inf] = 0
     
     FC_data_pft = np.multiply(actual_emission_data, inverse_BA)
     FC_per_month_pft = np.multiply(FC_data_pft, 
@@ -140,12 +150,12 @@ def get_grid_emissions(year_start, month_period,
     np.seterr(over='ignore')
     
     # Remove fill values.    
-    landmask = landmask["lsm"]
+    landmask = np.array(landmask["lsm"])
     landmask[landmask > 1.01] = 0
     actual_grid_area = np.multiply(grid_data["cell_area"],landmask)
     
     landCover = landCover_data["LandCoverFrac"][time:time + month_period,:9]
-    complete_area_data = np.multiply(landCover, grid_data["cell_area"])
+    complete_area_data = np.multiply(landCover, actual_grid_area)
     
     emis_rate_data = np.multiply(emis_data["fFirepft"][time:time + month_period], complete_area_data)
     emis_per_month = np.multiply(emis_rate_data, 
@@ -202,13 +212,15 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landmask, landC
 
 def plot_map_period(year_start, year_period, emis_data, grid_data, landmask, landCover_data):
     month_period = int(year_period*12)
-    map_data = get_grid_emissions(year_start,month_period,emis_data,grid_data,landmask, landCover_data)
+    #map_data = get_grid_emissions(year_start,month_period,emis_data,grid_data,landmask, landCover_data)
     # Convert to billions of kg.
-    map_data = np.multiply(map_data, (1./(10**9)))
+    #map_data = np.multiply(map_data, (1./(10**9)))
     
-    lats = data["latitude"]
-    lons = data["longitude"]
-    emis_data = map_data
+    #map_data = np.sum(np.sum(emis_data["fFirepft"][year_start*12:(year_start+year_period)*12], axis = 0), axis = 0)
+    
+    lats = emis_data["latitude"]
+    lons = emis_data["longitude"]
+    
     lons, lats = np.meshgrid(lons, lats)
     fig=plt.figure()
     m = Basemap(llcrnrlon=-180,llcrnrlat=-60, urcrnrlon=180,urcrnrlat=80,projection='mill')
@@ -216,16 +228,18 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landmask, lan
     m.drawparallels(np.arange(-90.,91.,30.))
     m.drawmeridians(np.arange(-180.,181.,60.))
     m.drawmapboundary(fill_color='aqua')
-    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
+    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
     cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
     cb.set_label("Billions of kg of Carbon")
     plt.title("Total Emissions, Inferno")
     plt.show()
         
 
+#print emis_Inferno["longitude"][-1]
+#print grid_Inferno["longitude"][-1]
 
-#plot_map_period(185,1,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
+plot_map_period(178,1,emis_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)
 #print get_grid_emissions(300,12,data_JSBACH,grid_data_JSBACH)
 
-#plot_global_emissions_yearly(200,data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
-#print get_global_emissions_yearly(188, data_Inferno, grid_data_Inferno, landmask_Inferno, landCover_Inferno)
+#plot_global_emissions_yearly(200,emis_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)
+#print get_global_emissions_yearly(178, emis_Inferno, grid_Inferno, landmask_Inferno, landCover_Inferno)

@@ -11,41 +11,6 @@ BA_JSBACH = Dataset('../../model_data/JSBACH_SF1burntArea.nc',
 grid_JSBACH = Dataset('../../model_data/JSBACH_grid.nc', 
                     'r', format = 'NETCDF4')              
                     
-data_Inferno = Dataset('../../model_data/Inferno_S1_fFirepft.nc4', 
-                'r', format = 'NETCDF4')
-grid_data_Inferno = Dataset('../../model_data/JSBACH_grid.nc', 
-                    'r', format = 'NETCDF4')
-
-data_CTEM = Dataset('../../model_data/CTEM_S1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-grid_data_CTEM = Dataset('../../model_data/CTEM_t63_landmask.nc', 
-                    'r', format = 'NETCDF4')
-                    
-data_CLM = Dataset('../../model_data/CLM_S1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-grid_data_CLM = Dataset('../../model_data/CLM-gridcell.nc', 
-                    'r', format = 'NETCDF4')
-
-data_MC2 = Dataset('../../model_data/MC2_GlobalFire_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-grid_data_MC2 = Dataset('../../model_data/JSBACH_grid.nc', 
-                    'r', format = 'NETCDF4')
-
-data_LPJ_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-grid_data_LPJ_SPITFIRE = Dataset('../../model_data/JSBACH_grid.nc', 
-                    'r', format = 'NETCDF4')
-
-data_LPJ_Globfirm = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-grid_data_LPJ_Globfirm = Dataset('../../model_data/JSBACH_grid.nc', 
-                    'r', format = 'NETCDF4')
-
-data_LPJ_BLAZE = Dataset('../../model_data/LPJ-GUESS-BLAZE_SF1_Cfire.nc', 
-                'r', format = 'NETCDF4')
-grid_data_LPJ_BLAZE = Dataset('../../model_data/JSBACH_grid.nc', 
-                    'r', format = 'NETCDF4')
-
 
 #
 # Fuel Consumption Analysis
@@ -161,7 +126,7 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data):
     
  
 #print plot_global_mean_FC_yearly(20, emis_JSBACH, BA_JSBACH, grid_JSBACH)
-#plot_FC_map_period(300, 5, emis_JSBACH, BA_JSBACH)
+#plot_FC_map_period(300, 1 , emis_JSBACH, BA_JSBACH)
 #print get_global_mean_FC_yearly(300, emis_JSBACH, BA_JSBACH, grid_JSBACH)
 
 

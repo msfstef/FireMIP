@@ -68,12 +68,6 @@ def get_global_mean_FC_yearly(year, emis_data, BA_data, grid_data, time_data):
     FC_data = get_grid_fuel_consumption(year,12,emis_data, BA_data, time_data)
     #Taking the weighted average of fuel consumption.
     global_mean_FC = np.average(FC_data, weights=grid_data["cell_area"])
-    
-    emissions = np.sum(get_grid_emissions(year,12,emis_data,grid_data,time_data))
-    print emissions
-    burnt_area_frac = np.divide(BA_data["BA."][year*12:(year+1)*12],100)
-    burnt_area = np.sum(np.multiply(burnt_area_frac, grid_data["cell_area"]))
-    print emissions/burnt_area
     return global_mean_FC 
 
 
@@ -227,5 +221,4 @@ def plot_emissions_map_period(year_start, year_period, emis_data, grid_data, tim
 #plot_emissions_map_period(300,5, emis_BLAZE, grid_BLAZE,time_data)
 #print get_global_emissions_yearly(308, emis_BLAZE, grid_BLAZE, time_data)        
 
-print get_global_mean_FC_yearly(300, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
-
+#print get_global_mean_FC_yearly(300, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
