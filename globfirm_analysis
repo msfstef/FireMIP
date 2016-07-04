@@ -3,18 +3,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
                     
-emis_MC2 = Dataset('../../model_data/MC2_GlobalFire_Cfire.nc', 
+emis_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_fFirepft.nc', 
                 'r', format = 'NETCDF4')
-BA_MC2 = Dataset('../../model_data/MC2_GlobalFire_BA.nc', 
+BA_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_burntArea.nc', 
                 'r', format = 'NETCDF4')                
-grid_MC2 = Dataset('../../model_data/HalfDegree-gridarea-8975.nc', 
+landCover_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_landCoverFrac.nc', 
+                'r', format = 'NETCDF4')                 
+grid_GLOBFIRM = Dataset('../../model_data/HalfDegree-gridarea-8975.nc', 
                     'r', format = 'NETCDF4')
 
 #
 # Fuel Consumption Analysis
 #
 
+
 def get_grid_fuel_consumption(year_start, year_period, emis_data, BA_data):
+    adjusted_year = year_start + 250
+    
     # Using 1 year equal to 365.25 days.
     sec_per_year = 31557600.
     
@@ -24,13 +29,14 @@ def get_grid_fuel_consumption(year_start, year_period, emis_data, BA_data):
     np.seterr(over='ignore')
     
     # Convert from percentage to decimal and eliminate meaningless values.
-    BA = np.divide(BA_data["BA"][year_start:year_start+year_period], 100)
-    BA[BA>100.] = 0
+    BA = np.divide(BA_data["burntArea."][year_start:year_start+year_period], 100)
+    BA[BA<0] = 0
     inverse_BA = np.array(1./BA)
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
     
-    actual_emission_data = emis_data["Cfire"][year_start:year_start+year_period]
+    emission_data_pft = emis_data["fFirepft"][year_start:year_start+year_period]
+    actual_emission_data = np.sum(emission_data_pft, axis = 1)
     
     FC_data = np.multiply(actual_emission_data, inverse_BA)  
     FC_per_month= np.multiply(FC_data, sec_per_year)
@@ -52,9 +58,9 @@ def get_global_mean_FC_yearly(year, emis_data, BA_data, grid_data):
     
     
 def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data):
-    years = len(emis_data["year"])
+    years = len(emis_data["time"])
     x_data = range(years)
-    x_data_plot = [x+1901 for x in x_data]
+    x_data_plot = [x+1950 for x in x_data]
     y_data = []
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
@@ -88,10 +94,10 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data):
     plt.title("Fuel Consumption, CTEM")
     plt.show()
     
-#print get_global_FC_yearly(300, emis_MC2, BA_MC2, grid_MC2)
-#plot_FC_map_period(100,1 , emis_MC2, BA_MC2)
-#plot_global_mean_FC_yearly(20, emis_MC2, BA_MC2, grid_MC2)
-#print get_global_mean_FC_yearly(100,emis_MC2, BA_MC2, grid_MC2)
+#print get_global_FC_yearly(300, emis_GLOBFIRM, BA_GLOBFIRM, grid_GLOBFIRM)
+#plot_FC_map_period(60,3 , emis_GLOBFIRM, BA_GLOBFIRM)
+#plot_global_mean_FC_yearly(20, emis_GLOBFIRM, BA_GLOBFIRM, grid_GLOBFIRM)
+#print get_global_mean_FC_yearly(60, emis_GLOBFIRM, BA_GLOBFIRM, grid_GLOBFIRM)
 
 
 
@@ -100,43 +106,47 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data):
 #
 
                    
-def get_grid_emissions(year_start, year_period, emis_data, grid_data):
+def get_grid_emissions(year_start, year_period, emis_data, grid_data, landCover_data):
+    adjusted_year = year_start + 250
     # Using 1 year equal to 365.25 days.
     sec_per_year = 31557600.
     
     # Ignore overflow warning.
     np.seterr(over='ignore')
     
+    #complete_area_data = np.multiply(grid_data["cell_area"], 
+    #            landCover_data["landCoverFrac"][adjusted_year:adjusted_year+year_period])
     complete_area_data = grid_data["cell_area"]
-    emis_rate_data = np.multiply(emis_data["Cfire"][year_start:year_start+year_period], complete_area_data)
+    emis_rate_data = np.multiply(emis_data["fFirepft"][year_start:year_start+year_period], complete_area_data)
     emis_per_year = np.multiply(emis_rate_data, sec_per_year)
-    emissions = np.sum(emis_per_year, axis = 0)
+    emissions_pft = np.sum(emis_per_year, axis = 0)
+    emissions = np.sum(emissions_pft, axis = 0)
     return emissions
 
-def get_global_emissions_yearly(year, emis_data, grid_data):
-    emissions_grid = get_grid_emissions(year, 1, emis_data, grid_data)
+def get_global_emissions_yearly(year, emis_data, grid_data, landCover_data):
+    emissions_grid = get_grid_emissions(year, 1, emis_data, grid_data, landCover_data)
     emissions = np.sum(emissions_grid)
     return emissions
 
 
-def plot_global_emissions_yearly(no_years, emis_data, grid_data):
-    years = len(emis_data["year"])
+def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data):
+    years = len(emis_data["time"])
     x_data = range(years)
-    x_data_plot = [x+1901 for x in x_data]
+    x_data_plot = [x+1950 for x in x_data]
     y_data = []
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
                 float(len(x_data[-no_years:]))))
-        y_data.append(get_global_emissions_yearly(x, emis_data, grid_data)/(10**12))
+        y_data.append(get_global_emissions_yearly(x, emis_data, grid_data, landCover_data)/(10**12))
     plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
-               label='MC2 Results')
+               label='LPJ GlobFIRM Results')
     plt.ylabel('Carbon Emitted ($Pg/year$)')
     plt.xlabel('Year')
     plt.legend()
     plt.show()
 
-def plot_map_period(year_start, year_period, emis_data, grid_data):
-    map_data = get_grid_emissions(year_start,year_period, emis_data, grid_data)
+def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_data):
+    map_data = get_grid_emissions(year_start,year_period, emis_data, grid_data, landCover_data)
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
     
@@ -151,12 +161,13 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
     m.drawparallels(np.arange(-90.,91.,30.))
     m.drawmeridians(np.arange(-180.,181.,60.))
     m.drawmapboundary(fill_color='aqua')
-    cs = m.contourf(lons,lats, emis_data, 10, cmap=plt.cm.YlOrRd, latlon=True)
+    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
     cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
     cb.set_label("Billions of kg of Carbon")
-    plt.title("Total Emissions, MC2")
+    plt.title("Total Emissions, LPJ GlobFIRM")
     plt.show()
     
-#plot_map_period(100,2,emis_MC2, grid_MC2)    
-#plot_global_emissions_yearly(20, emis_MC2, grid_MC2)
-#print get_global_emissions_yearly(108, emis_MC2, grid_MC2)
+#plot_map_period(60,1,emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)    
+#plot_global_emissions_yearly(20, emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)
+#print get_global_emissions_yearly(53, emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)
+

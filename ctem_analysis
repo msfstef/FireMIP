@@ -196,4 +196,4 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     plt.title("Total Emissions, CTEM")
     plt.show()
     
-#print get_global_emissions_yearly(146,emis_CTEM,grid_CTEM, landCover_CTEM)
+#print get_global_emissions_yearly(150,emis_CTEM,grid_CTEM, landCover_CTEM)

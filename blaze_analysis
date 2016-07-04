@@ -8,13 +8,12 @@ emis_BLAZE = Dataset('../../model_data/LPJ-GUESS-BLAZE_SF1_Cfire.nc',
                 'r', format = 'NETCDF4')
 BA_BLAZE = Dataset('../../model_data/LPJ-GUESS-BLAZE_SF1_BA.nc', 
                 'r', format = 'NETCDF4')            
-grid_BLAZE = Dataset('../../model_data/HalfDegree-gridarea.nc', 
+grid_BLAZE = Dataset('../../model_data/HalfDegree-gridarea-8950.nc', 
                     'r', format = 'NETCDF4')
 
 # LPJ BLAZE has no useful separate time data, must use JSBACH data which matches it.             
 time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc', 
                 'r', format = 'NETCDF4')
-
 
 #
 # Fuel Consumption Analysis
@@ -220,5 +219,3 @@ def plot_emissions_map_period(year_start, year_period, emis_data, grid_data, tim
 #plot_global_emissions_yearly(3,emis_BLAZE,grid_BLAZE,time_data)
 #plot_emissions_map_period(300,5, emis_BLAZE, grid_BLAZE,time_data)
 #print get_global_emissions_yearly(308, emis_BLAZE, grid_BLAZE, time_data)        
-
-#print get_global_mean_FC_yearly(300, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)

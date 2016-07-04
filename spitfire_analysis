@@ -8,7 +8,7 @@ emis_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_fFirepft.nc',
                 'r', format = 'NETCDF4')
 BA_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_burntArea.nc', 
                 'r', format = 'NETCDF4')            
-grid_SPITFIRE = Dataset('../../model_data/HalfDegree-gridarea.nc', 
+grid_SPITFIRE = Dataset('../../model_data/HalfDegree-gridarea-8975.nc', 
                     'r', format = 'NETCDF4')
 landCover_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_landCoverFrac.nc', 
                     'r', format = 'NETCDF4')                    
@@ -16,6 +16,7 @@ landCover_SPITFIRE = Dataset('../../model_data/LPJ-GUESS-SPITFIRE_SF1_landCoverF
 # LPJ BLAZE has no useful separate time data, must use JSBACH data which matches it.             
 time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc', 
                 'r', format = 'NETCDF4')
+
 
 #
 # Fuel Consumption Analysis
@@ -69,7 +70,7 @@ def get_global_mean_FC_yearly(year, emis_data, BA_data, grid_data, landCover_dat
 def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, landCover_data):
     years = int(len(emis_data["time"])/12)
     x_data = range(years-1)
-    x_data_plot = [x+1861 for x in x_data]
+    x_data_plot = [x+1700 for x in x_data]
     y_data = []
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
@@ -122,15 +123,24 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
         days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
     sec_per_month = np.multiply(days_per_month, 86400)
     
+    
     # Ignore overflow warning.
     np.seterr(over='ignore')
     
-    # Get rid of pfts, structure of data inconvenient.
-    emis_data = np.sum(emis_data["fFirepft"][time:time+month_period], axis=3)
-    #landCover_data = np.sum(landCover_data["landCoverFrac"][year_start:int(year_start+month_period/12.),:,:,:13], axis=3)
-       
-    #complete_area_data = np.multiply(landCover_data, grid_data["cell_area"])
-    emis_rate_data = np.multiply(emis_data, grid_data["cell_area"])
+    
+    emis_data = emis_data["fFirepft"][time:time+month_period]
+    #landCover_data = landCover_data["landCoverFrac"][year_start:int(year_start+month_period/12.),:,:,:13]
+    # Remove meaningless values.
+    #landCover_data[landCover_data<0]=0
+    #actual_emis_data_pft = np.multiply(emis_data, landCover_data)
+    # Get rid of pfts before cell area multiplication, structure inconvenient.
+    #actual_emis_data = np.sum(actual_emis_data_pft, axis=3)
+     
+    actual_emis_data = np.sum(emis_data, axis=3)
+    print np.sum(actual_emis_data)   
+    complete_area_data = grid_data["cell_area"]
+    emis_rate_data = np.multiply(actual_emis_data, complete_area_data)
+    print np.sum(emis_rate_data)
     emis_per_month = np.multiply(emis_rate_data, sec_per_month[:, np.newaxis, np.newaxis])
     emissions = np.sum(emis_per_month, axis = 0)
     return emissions
@@ -164,7 +174,7 @@ def plot_global_emissions_monthly(no_months, emis_data, grid_data, landCover_dat
 def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data):
     years = int(len(emis_data["time"])/12)
     x_data = range(years-1)
-    x_data_plot = [x+1861 for x in x_data]
+    x_data_plot = [x+1700 for x in x_data]
     y_data = []
     for x in x_data[-no_years:]:
         print("%.2f" % ((x-x_data[-no_years])/
@@ -183,8 +193,8 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
     
-    lats = grid_data["lat"]
-    lons = grid_data["lon"]
+    lats = grid_data["latitude"]
+    lons = grid_data["longitude"]
     emis_data = map_data
     lons, lats = np.meshgrid(lons, lats)
 
@@ -200,6 +210,7 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     plt.title("Total Emissions, LPJ SPITFIRE")
     plt.show()
     
-#print get_global_emissions_yearly(312,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+    
+#print get_global_emissions_yearly(300,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
 #plot_map_period(300,12,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
 

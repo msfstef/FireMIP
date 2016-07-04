@@ -104,7 +104,7 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data, time_data):
     plt.show()
     
 #print get_global_FC_yearly(300, emis_CLM, BA_CLM, time_data)
-plot_FC_map_period(300,1 , emis_CLM, BA_CLM, time_data)
+#plot_FC_map_period(310,1 , emis_CLM, BA_CLM, time_data)
 #plot_global_mean_FC_yearly(20, emis_CLM, BA_CLM, grid_CLM,time_data)
 #print get_global_mean_FC_yearly(300,emis_CLM,BA_CLM,grid_CLM, time_data)
 
@@ -196,4 +196,4 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, time_data):
     plt.show()
     
     
-#print get_global_emissions_yearly(300,emis_CLM,grid_CLM,time_data)
+#print get_global_emissions_yearly(310,emis_CLM,grid_CLM,time_data)
