@@ -140,8 +140,8 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
     
-    lats = grid_data["lat"]
-    lons = grid_data["lon"]
+    lats = grid_data["latitude"]
+    lons = grid_data["longitude"]
     emis_data = map_data
     lons, lats = np.meshgrid(lons, lats)
 
@@ -157,6 +157,6 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
     plt.title("Total Emissions, MC2")
     plt.show()
     
-#plot_map_period(100,2,emis_MC2, grid_MC2)    
+#plot_map_period(100,1,emis_MC2, grid_MC2)    
 #plot_global_emissions_yearly(20, emis_MC2, grid_MC2)
 #print get_global_emissions_yearly(108, emis_MC2, grid_MC2)

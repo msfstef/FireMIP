@@ -150,8 +150,8 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
     
-    lats = grid_data["lat"]
-    lons = grid_data["lon"]
+    lats = grid_data["latitude"]
+    lons = grid_data["longitude"]
     emis_data = map_data
     lons, lats = np.meshgrid(lons, lats)
 

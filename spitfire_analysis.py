@@ -142,7 +142,7 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     np.seterr(over='ignore')
     
     
-    emis_data = emis_data["fFirepft"][time:time+month_period]
+    emis = emis_data["fFirepft"][time:time+month_period]
     #landCover_data = landCover_data["landCoverFrac"][year_start:int(year_start+month_period/12.),:,:,:13]
     # Remove meaningless values.
     #landCover_data[landCover_data<0]=0
@@ -150,11 +150,9 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     # Get rid of pfts before cell area multiplication, structure inconvenient.
     #actual_emis_data = np.sum(actual_emis_data_pft, axis=3)
      
-    actual_emis_data = np.sum(emis_data, axis=3)
-    print np.sum(actual_emis_data)   
+    actual_emis_data = np.sum(emis, axis=3) 
     complete_area_data = grid_data["cell_area"]
     emis_rate_data = np.multiply(actual_emis_data, complete_area_data)
-    print np.sum(emis_rate_data)
     emis_per_month = np.multiply(emis_rate_data, sec_per_month[:, np.newaxis, np.newaxis])
     emissions = np.sum(emis_per_month, axis = 0)
     return emissions
@@ -224,7 +222,10 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     plt.title("Total Emissions, LPJ SPITFIRE")
     plt.show()
     
-    
-#print get_global_emissions_yearly(300,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
-#plot_map_period(300,12,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+ 
+#plot_global_emissions_yearly(312,emis_SPITFIRE, grid_SPITFIRE, landCover_SPITFIRE)
+#print get_global_emissions_yearly(313,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+#plot_map_period(300,1,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+
+
 
