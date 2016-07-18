@@ -18,7 +18,6 @@ grid_JSBACH = Dataset('../../model_data/JSBACH_grid.nc',
 
 def get_grid_burnt_area(year, month_period, BA_data, grid_data):
     BA = BA_data["burntArea"][year*12:year*12+month_period]
-    BA[BA<1e-15]=0
     BA[BA>1.] = 0
     
     burnt_area_data = np.multiply(BA, grid_data["area"])

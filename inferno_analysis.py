@@ -13,8 +13,7 @@ landmask_Inferno = Dataset('../../model_data/CRU-NCEP-LandMask.nc',
                     'r', format = 'NETCDF4')
 landCover_Inferno = Dataset('../../model_data/Inferno_S1_LandCoverFrac.nc',
                     'r', format = 'NETCDF4')
-
-                    
+                
 
  
 #

@@ -223,7 +223,7 @@ def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_dat
     plt.show()
     
  
-#plot_global_emissions_yearly(312,emis_SPITFIRE, grid_SPITFIRE, landCover_SPITFIRE)
+#plot_global_emissions_yearly(20,emis_SPITFIRE, grid_SPITFIRE, landCover_SPITFIRE)
 #print get_global_emissions_yearly(313,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
 #plot_map_period(300,1,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
 

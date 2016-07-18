@@ -222,6 +222,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     BA = np.divide(BA_data["burntArea"][time:time+month_period, :9], 100)
     BA[BA<0.] = 0
     BA[BA>1.] = 0
+    # Not sure if I should multiply with landCover or not, gives singularities.
     #BA = np.multiply(landCover, BA)
 
     # Add up pft dependency.

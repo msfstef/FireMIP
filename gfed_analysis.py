@@ -77,7 +77,7 @@ def plot_burnt_area_map_period(year_start, year_period, data, grid_data):
  
     
 #plot_global_BA_yearly(16,data_GFED, grid_GFED)
-#plot_burnt_area_map_period(0,17,data_GFED, grid_GFED) 
+#plot_burnt_area_map_period(0,1,data_GFED, grid_GFED) 
 #print get_global_BA_yearly(10, data_GFED, grid_GFED)
 
 

@@ -18,7 +18,6 @@ time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc',
                 'r', format = 'NETCDF4')
 
 
-
 #
 # Burnt Area Analysis
 #
@@ -29,7 +28,8 @@ def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
     landCover[landCover>10**10] = 0
     landCover[landCover<0] = 0
     landCover = np.divide(landCover,100)
-
+    landCover = np.repeat(landCover, 12, axis=0)    
+    
     BA = BA_data["burntArea"][year*12:year*12+month_period]
     BA = np.multiply(landCover, BA)
     BA[BA<0.] = 0
@@ -67,9 +67,8 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data, landCover_data):
 
 def plot_burnt_area_map_period(year_start, year_period, BA_data, grid_data, landCover_data):
     BA_list=[]                        
-    for i in range(year_period):
-        BA_list.append(get_grid_burnt_area(year_start+i,12,BA_data,grid_data,landCover_data))
-    map_data = np.sum(BA_list, axis=0)
+    map_data=get_grid_burnt_area(year_start+i,12,BA_data,
+                            grid_data,landCover_data)
     # Change units.
     map_data = np.divide(map_data, 1e9)
     # Replace 0 by nan, take mean.
@@ -127,6 +126,7 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     landCover[landCover>10**10] = 0
     landCover[landCover<0] = 0
     landCover = np.divide(landCover,100)
+    landCover = np.repeat(landCover, 12, axis=0)
        
     complete_area_data = np.multiply(landCover, grid_data["cell_area"])
     emis_rate_data = np.multiply(emis_data["fFirepft"][time:time+month_period], complete_area_data)
@@ -160,13 +160,14 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data,
 
 def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_data, time_data):
     yearly_data = []
-    for i in range(year_period):
-        yearly_data.append(get_grid_emissions(year_start+i,12, emis_data, grid_data, landCover_data, time_data))
-    map_data = np.mean(yearly_data, axis=0)
+    map_data=get_grid_emissions(year_start+i,12, emis_data, 
+                            grid_data, landCover_data, time_data)
+
     # Convert to billions of kg.
     map_data = np.multiply(map_data, (1./(10**9)))
     # Replace 0 by nan.
     map_data[map_data==0]=np.nan
+    map_data = np.divide(map_data,year_period)
     
     lats = grid_data["latitude"]
     lons = grid_data["longitude"]
@@ -219,6 +220,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     landCover[landCover>10**10] = 0
     landCover[landCover<0] = 0
     landCover = np.divide(landCover,100)
+    landCover = np.repeat(landCover, 12, axis=0)
 
     BA = BA_data["burntArea"][time:time+month_period]
     BA = np.multiply(landCover, BA)
@@ -274,13 +276,11 @@ def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, landCove
     
     
 def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landCover_data, time_data):
-    yearly_data = []
-    for i in range(year_period):
-        yearly_data.append(get_grid_fuel_consumption(year_start,12,
-                                emis_data, BA_data, landCover_data, time_data))                             
-    map_data = np.mean(yearly_data, axis=0)
+    map_data=get_grid_fuel_consumption(year_start,year_period*12,
+                emis_data,BA_data,landCover_data,time_data)
     # Replace 0 by nan.
     map_data[map_data==0]=np.nan
+    map_data = np.divide(map_data,year_period)
     
     lats = landCover_data["latitude"]
     lons = landCover_data["longitude"]
@@ -302,6 +302,6 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landCover_da
 
 #print get_global_mean_FC_yearly_rough(300, emis_ORCHIDEE, BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE,time_data)
     
-#plot_FC_map_period(297,16 , emis_ORCHIDEE, BA_ORCHIDEE, landCover_ORCHIDEE, time_data)
+#plot_FC_map_period(297,1 , emis_ORCHIDEE, BA_ORCHIDEE, landCover_ORCHIDEE, time_data)
 #plot_global_mean_FC_yearly(20, emis_ORCHIDEE,BA_ORCHIDEE,grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
 #print get_global_mean_FC_yearly(300,emis_ORCHIDEE, BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
