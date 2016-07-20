@@ -16,6 +16,7 @@ import globfirm_analysis as globfirm
 import gfed_analysis as gfed
 
 
+
 #
 # Regional Analysis Toolkit
 #
@@ -34,7 +35,7 @@ def interp_regions(lons, lats):
     return regions
 
 
-def plot_regions(model='gfed', plot=True):
+def generate_regions(model='gfed', plot=False):
     """
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
@@ -50,16 +51,16 @@ def plot_regions(model='gfed', plot=True):
         lats = np.array(lats)
         lats = lats[::-1]
         lons = jsbach.grid_JSBACH["longitude"]
-        lons = np.array(lons) - 180.
+        lons = np.array(lons) - np.max(lons)/2.
     elif model=='clm':
         lats = clm.grid_CLM["lat"]
         lons = clm.grid_CLM["lon"]
-        lons = np.array(lons) - 180.
+        lons = np.array(lons) - np.max(lons)/2.
         
     elif model=='ctem':
         lats = ctem.grid_CTEM["lat"]
         lons = ctem.grid_CTEM["lon"]
-        lons = np.array(lons) - 180.
+        lons = np.array(lons) - np.max(lons)/2.
     elif model=='blaze':
         lats = blaze.grid_BLAZE["lat"]
         lons = blaze.grid_BLAZE["lon"]
@@ -71,15 +72,15 @@ def plot_regions(model='gfed', plot=True):
     elif model=='inferno':
         lats = inferno.grid_Inferno["latitude"]
         lons = inferno.grid_Inferno["longitude"]  
-        lons = np.array(lons) - 180.
+        lons = np.array(lons) - np.max(lons)/2.
       
     lons, lats = np.meshgrid(lons, lats)
     
     if no_interp:
-        map_data = gfed.grid_GFED["basis_regions"]
-        map_data = map_data[::-1,:]
+        region_data = gfed.grid_GFED["basis_regions"]
+        region_data = region_data[::-1,:]
     else:
-        map_data = interp_regions(lons, lats)
+        region_data = interp_regions(lons, lats)
     
     if plot:
         fig=plt.figure()
@@ -89,15 +90,29 @@ def plot_regions(model='gfed', plot=True):
         m.drawparallels(np.arange(-90.,91.,30.))
         m.drawmeridians(np.arange(-180.,181.,60.))
         m.drawmapboundary(fill_color='white')
-        #cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.rainbow, latlon=True)
-        m.imshow(map_data, cmap=plt.cm.rainbow,  interpolation='none')
+        #cs = m.contourf(lons,lats, region_data, 100, cmap=plt.cm.rainbow, latlon=True)
+        m.imshow(region_data, cmap=plt.cm.rainbow,  interpolation='none')
         #cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
         #cb.set_label("Region number")
         plt.title("GFED Regions Interpolated for " + model)
         plt.show()
+    else:
+        return region_data
 
 
-#plot_regions('jsbach')
+def get_regional_var_grid(year, year_period, region, model, var='FC', for_map=False):
+    full_grid = load_var_grid(year,year_period,model,var,for_map)
+    region_data = generate_regions(model)
+    
+    # Set desired region to 1 and every other region to 0.
+    region_data[region_data != region] = 0.
+    region_data[region_data == region] = 1.
+    
+    regional_grid = np.multiply(full_grid, region_data)
+    return regional_grid
+    
+    
+#generate_regions('inferno', True)
 
 
 #
@@ -282,7 +297,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
     return grid
 
 
-def plot_map(year, year_period, model, var='FC'):
+def plot_map(year, year_period, model, var='FC', region=0):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -294,8 +309,18 @@ def plot_map(year, year_period, model, var='FC'):
     'FC', 'BA', or 'emis' as an input, which will return the
     spatial histogram for fuel consumption, burnt area, or emissions
     respectively.
+    
+    To plot regional data, set value of region argument from 1 to 14, 
+    which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
+    NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
+    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
     """
+    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
+                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']
+                
     grid = load_var_grid(year, year_period, model, var, True)
+    if region != 0:
+        grid = get_regional_var_grid(year, year_period, region, model, var, True)
     
     # Convert zeroes to NaNs and take yearly mean.
     grid[grid==0]=np.nan
@@ -309,6 +334,7 @@ def plot_map(year, year_period, model, var='FC'):
         units = '($kg\, C\, m^{-2}$)'
     elif var == 'BA':
         title = 'Burnt Area'
+        # Issue here, how to get normalised fraction per year?
         units = '(Fraction Burned)'
         
     
@@ -323,13 +349,12 @@ def plot_map(year, year_period, model, var='FC'):
     cs=m.imshow(grid, interpolation='none')
     cb=m.colorbar(cs, "bottom", size="5%", pad="2%")
     cb.set_label(title + ' ' + units)
-    plt.title('Mean '+title+' for '+str(year)+
-            '-'+str(year+year_period)+', '+model)
+    plt.title('Mean '+title+' for '+str(year)+'-'+
+        str(year+year_period)+', '+region_names[region]+', '+model)
     plt.show()
 
-plot_map(1997,1,'blaze','BA')
 
-def plot_spatial_histogram(year, year_period, model, var='FC'):
+def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -341,8 +366,18 @@ def plot_spatial_histogram(year, year_period, model, var='FC'):
     'FC', 'BA', or 'emis' as an input, which will return the
     spatial histogram for fuel consumption, burnt area, or emissions
     respectively.
+    
+    To use regional data, set value of region argument from 1 to 14, 
+    which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
+    NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
+    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
     """
+    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
+                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']
+    
     grid = load_var_grid(year, year_period, model, var)
+    if region != 0:
+        grid = get_regional_var_grid(year, year_period, region, model, var, True)
     
     if var == 'FC':
         title = 'Fuel Consumption'
@@ -353,7 +388,8 @@ def plot_spatial_histogram(year, year_period, model, var='FC'):
     elif var == 'BA':
         title = 'Burnt Area'
         units = '($m^2$)'
-
+    
+    # Not needed, removing 0 values flattens.
     #flat_grid = np.ndarray.flatten(grid)
     flat_grid = grid[grid > 0]
     flat_grid = np.divide(flat_grid, year_period)
@@ -361,12 +397,13 @@ def plot_spatial_histogram(year, year_period, model, var='FC'):
     
     plt.xlabel(title + ' ' + units)
     plt.ylabel('Frequency in \%')
-    plt.title('Spatial Histogram of ' + title + ' for ' + model)
+    plt.title('Spatial Histogram of '+title+' for '+str(year)+
+            '-'+str(year+year_period)+', '+region_names[region]+', '+model)
 
     plt.show()
 
 
-def plot_multimodel_box(year, year_period, var='FC'):
+def plot_multimodel_box(year, year_period, var='FC', region=0):
     """
     Year is given in absolute terms, e.g. 1997.
     
@@ -374,12 +411,21 @@ def plot_multimodel_box(year, year_period, var='FC'):
     'FC', 'BA', or 'emis' as an input, which will return the
     boxplots for fuel consumption, burnt area, or emissions
     respectively.
+    
+    To use regional data, set value of region argument from 1 to 14, 
+    which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
+    NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
+    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
     """
+    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
+                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']    
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno']
     data=[]              
     for model in model_list:
-        grid = load_var_grid(year, year_period, model, var)
+        grid = load_var_grid(year, year_period, model, var, True)
+        if region != 0:
+            grid = get_regional_var_grid(year, year_period, region, model, var, True)
         flat_grid = grid[grid > 0]
         flat_grid = np.divide(flat_grid, year_period)
         data.append(flat_grid)
@@ -397,9 +443,14 @@ def plot_multimodel_box(year, year_period, var='FC'):
     plt.boxplot(data, showmeans=True, whis=[5,95], sym='', 
                 labels = model_list)
     plt.ylabel(title +' '+ units)
+    plt.title('Box plot of '+title+' for '+str(year)+
+            '-'+str(year+year_period)+', '+region_names[region])
     plt.show()
 
 
+#plot_map(1997,2,'inferno', 'FC')
+#plot_multimodel_box(1997,1,'emis')
+#plot_spatial_histogram(1997, 5, 'clm')
 
-#plot_multimodel_box(1997,15,'FC')
-#plot_spatial_histogram(1997, 15, 'clm', 'FC')
+
+
