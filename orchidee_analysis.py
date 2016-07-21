@@ -65,37 +65,8 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data, landCover_data):
     plt.legend()
     plt.show()
 
-def plot_burnt_area_map_period(year_start, year_period, BA_data, grid_data, landCover_data):
-    BA_list=[]                        
-    map_data=get_grid_burnt_area(year_start+i,12,BA_data,
-                            grid_data,landCover_data)
-    # Change units.
-    map_data = np.divide(map_data, 1e9)
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
     
-    
-    lats = BA_data["latitude"]
-    lons = BA_data["longitude"]
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Burnt Area (billions of $m^2$)")
-    plt.title("Mean Burnt Area, ORCHIDEE")
-    plt.show()
- 
-    
-#plot_global_BA_yearly(16,BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE)
-#plot_burnt_area_map_period(297,16,BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE)    
+#plot_global_BA_yearly(16,BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE)  
 #print get_global_BA_yearly(300, BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE)
 
 
@@ -158,37 +129,9 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data,
     plt.legend()
     plt.show()
 
-def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_data, time_data):
-    yearly_data = []
-    map_data=get_grid_emissions(year_start+i,12, emis_data, 
-                            grid_data, landCover_data, time_data)
 
-    # Convert to billions of kg.
-    map_data = np.multiply(map_data, (1./(10**9)))
-    # Replace 0 by nan.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    lats = grid_data["latitude"]
-    lons = grid_data["longitude"]
-    emis_data = map_data
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Billions of kg of Carbon")
-    plt.title("Mean Emissions, ORCHIDEE")
-    plt.show()
-    
 #print get_global_emissions_yearly(312,emis_ORCHIDEE,grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
 #plot_global_emissions_yearly(20,emis_ORCHIDEE,grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
-#plot_map_period(297,16,emis_ORCHIDEE,grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
 
 
 #
@@ -274,34 +217,7 @@ def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, landCove
     plt.legend()
     plt.show()
     
-    
-def plot_FC_map_period(year_start, year_period, emis_data, BA_data, landCover_data, time_data):
-    map_data=get_grid_fuel_consumption(year_start,year_period*12,
-                emis_data,BA_data,landCover_data,time_data)
-    # Replace 0 by nan.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    lats = landCover_data["latitude"]
-    lons = landCover_data["longitude"]
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Carbon emitted per area burned ($kg\, C / m^2 \, burned$)")
-    plt.title("Mean Fuel Consumption, ORCHIDEE")
-    plt.show()
-
 
 #print get_global_mean_FC_yearly_rough(300, emis_ORCHIDEE, BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE,time_data)
-    
-#plot_FC_map_period(297,1 , emis_ORCHIDEE, BA_ORCHIDEE, landCover_ORCHIDEE, time_data)
 #plot_global_mean_FC_yearly(20, emis_ORCHIDEE,BA_ORCHIDEE,grid_ORCHIDEE, landCover_ORCHIDEE, time_data)
 #print get_global_mean_FC_yearly(300,emis_ORCHIDEE, BA_ORCHIDEE, grid_ORCHIDEE, landCover_ORCHIDEE, time_data)

@@ -16,7 +16,6 @@ time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc',
                 'r', format = 'NETCDF4')
 
 
-
 #
 # Burnt Area Analysis
 #
@@ -54,35 +53,7 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data):
     plt.legend()
     plt.show()
 
-def plot_burnt_area_map_period(year_start, year_period, BA_data, grid_data):
-    map_data = get_grid_burnt_area(year_start,year_period*12,BA_data,grid_data)
-    # Change units.
-    map_data = np.divide(map_data, 1e9)
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    
-    lats = grid_data["lat"]
-    lons = grid_data["lon"]
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Burnt Area (billions of $m^2$)")
-    plt.title("Mean Burnt Area, LPJ BLAZE")
-    plt.show()
- 
-    
 #plot_global_BA_yearly(16,BA_BLAZE, grid_BLAZE)
-#plot_burnt_area_map_period(297,16,BA_BLAZE, grid_BLAZE)
 #print get_global_BA_yearly(300, BA_BLAZE, grid_BLAZE)
 
  
@@ -117,26 +88,6 @@ def get_global_emissions_yearly(year, emis_data, grid_data, time_data):
     emissions_grid = get_grid_emissions(year, 12, emis_data, grid_data, time_data)
     emissions = np.sum(emissions_grid)
     return emissions
-
-def get_global_emissions_monthly(month, emis_data, grid_data, time_data):
-    emissions_grid = get_grid_emissions(month/12., 1, emis_data, grid_data, time_data)
-    emissions = np.sum(emissions_grid)
-    return emissions
-   
-    
-def plot_global_emissions_monthly(no_months, emis_data, grid_data, time_data):
-    x_data = range(len(time_data["time"])-1)
-    y_data = []
-    for x in x_data[-no_months:]:
-        print("%.2f" % ((x-x_data[-no_months])/
-                float(len(x_data[-no_months:]))))
-        y_data.append(get_global_FC_monthly(x, emis_data, grid_data, time_data))
-    plt.plot(x_data[-no_months:], y_data, color='r', linewidth=2.0,
-               label='LPJ BLAZE Results')
-    plt.ylabel('Carbon Emitted ($Pg/month$)')
-    plt.xlabel('Month')
-    plt.legend()
-    plt.show()
    
 
 def plot_global_emissions_yearly(no_years, emis_data, grid_data, time_data):
@@ -155,36 +106,8 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, time_data):
     plt.legend()
     plt.show()
 
-def plot_emissions_map_period(year_start, year_period, emis_data, grid_data, time_data):
-    month_period = int(year_period*12)
-    map_data = get_grid_emissions(year_start,month_period,emis_data,grid_data, time_data)
-    # Convert to billions of kg.
-    map_data = np.multiply(map_data, (1./(10**9)))
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    lats = emis_data["lat"]
-    lons = emis_data["lon"]
-    emis_data = map_data
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Billions of kg of Carbon")
-    plt.title("Mean Emissions, LPJ BLAZE")
-    plt.show()
-    
 
 #plot_global_emissions_yearly(20,emis_BLAZE,grid_BLAZE,time_data)
-#plot_emissions_map_period(297,16, emis_BLAZE, grid_BLAZE,time_data)
 #print get_global_emissions_yearly(308, emis_BLAZE, grid_BLAZE, time_data) 
 
 
@@ -236,22 +159,7 @@ def get_global_mean_FC_yearly_rough(year, emis_data, BA_data, grid_data, time_da
     total_BA = get_global_BA_yearly(year,BA_data,grid_data)
     global_mean_FC = total_emis/total_BA
     return global_mean_FC
-    
 
-def plot_global_FC_monthly(no_months, emis_data, BA_data, grid_data, time_data):
-    x_data = range(len(time_data["time"])-1)
-    y_data = []
-    for x in x_data[-no_months:]:
-        print("%.2f" % ((x-x_data[-no_months])/
-                float(len(x_data[-no_months:]))))
-        y_data.append(get_global_mean_FC_monthly(x, emis_data, BA_data, grid_data, time_data))
-    plt.plot(x_data[-no_months:], y_data, color='r', linewidth=2.0,
-               label='LPJ BLAZE Results')
-    plt.ylabel('Fuel Consumption ($kg\, C / m^2 \, burned$)')
-    plt.xlabel('Month')
-    plt.legend()
-    plt.show()
-    
     
 def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, time_data):
     years = int(len(time_data["time"])/12)
@@ -268,37 +176,9 @@ def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, time_dat
     plt.xlabel('Year')
     plt.legend()
     plt.show()
-    
-    
-def plot_FC_map_period(year_start, year_period, emis_data, BA_data, time_data):
-    month_period = int(year_period*12)
-    map_data = get_grid_fuel_consumption(year_start,month_period,emis_data,BA_data,time_data)
-    
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-      
-    lats = emis_data["lat"]
-    lons = emis_data["lon"]
-    lons, lats = np.meshgrid(lons, lats)
 
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Carbon emitted per area burned ($kg\, C / m^2 \, burned $)")
-    plt.title("Mean Fuel Consumption 1997-2012, LPJ BLAZE")
-    plt.show()
-    
 
 #print get_global_mean_FC_yearly_rough(300,emis_BLAZE,BA_BLAZE,grid_BLAZE,time_data)
-
 #print plot_global_mean_FC_yearly(20, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
-#plot_FC_map_period(297, 16, emis_BLAZE, BA_BLAZE, time_data)
 #print get_global_mean_FC_yearly(300, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
        

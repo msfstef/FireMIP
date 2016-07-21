@@ -16,19 +16,63 @@ import globfirm_analysis as globfirm
 import gfed_analysis as gfed
 
 
-
 #
 # Regional Analysis Toolkit
 #
 
+def create_box_regions(lons,lats):
+    """
+    Roughly based on GFED regions and
+    GPP (gross primary production) data.
+    See http://tinyurl.com/h6zvduw.
+    """
+    regions = np.empty(lons.shape)
+    for index,lon in np.ndenumerate(lons):
+        lat = lats[index]
+        if -170.<lon<-30.:
+            if 45.<lat<90.:
+                regions[index]=1
+            elif 20.<lat<45.:
+                regions[index]=2
+            elif -25.<lat<20.:
+                regions[index]=3
+            else:
+                regions[index]=4
+        elif -30.<lon<60:
+            if 45.<lat<90.:
+                regions[index]=5
+            elif 15.<lat<45.:
+                regions[index]=6
+            elif -15.<lat<15.:
+                regions[index]=7
+            else:
+                regions[index]=8
+        else:
+            if 45.<lat<90.:
+                regions[index]=9
+            elif 20.<lat<50.:
+                regions[index]=10
+            elif -10.<lat<20.:
+                regions[index]=11
+            else:
+                regions[index]=12
+    return regions
+
+
 def interp_regions(lons, lats):
     regions_GFED = gfed.grid_GFED["basis_regions"]
     regions_GFED = np.array(regions_GFED)
-        
-    lats_gfed = gfed.data_GFED["lat"]
-    lats_gfed = np.array(lats_gfed)
-    lons_gfed = gfed.data_GFED["lon"]
-    lons_gfed = np.array(lons_gfed)
+    
+    # GFED's lats and lons have issue, generated my own.    
+    #lats_gfed = gfed.data_GFED["lat"]
+    #lats_gfed = np.array(lats_gfed)
+    #lons_gfed = gfed.data_GFED["lon"]
+    #lons_gfed = np.array(lons_gfed)
+    
+    lats_gfed = np.arange(-89.875, 90.,0.25)
+    lats_gfed = lats_gfed[::-1]
+    lons_gfed = np.arange(-179.875, 180.,0.25)
+    lons_gfed, lats_gfed = np.meshgrid(lons_gfed, lats_gfed)
     
     regions = intrplt.griddata((lons_gfed.ravel(),lats_gfed.ravel()), 
                   regions_GFED.ravel(), (lons,lats), method='nearest')
@@ -70,18 +114,18 @@ def generate_regions(model='gfed', plot=False):
         lats = lats[::-1]
         lons = orchidee.grid_ORCHIDEE["longitude"]
     elif model=='inferno':
-        lats = inferno.grid_Inferno["latitude"]
-        lons = inferno.grid_Inferno["longitude"]  
+        lats = inferno.grid_INFERNO["latitude"]
+        lons = inferno.grid_INFERNO["longitude"]  
         lons = np.array(lons) - np.max(lons)/2.
       
     lons, lats = np.meshgrid(lons, lats)
-    
+
     if no_interp:
         region_data = gfed.grid_GFED["basis_regions"]
         region_data = region_data[::-1,:]
     else:
         region_data = interp_regions(lons, lats)
-    
+        #region_data = create_box_regions(lons,lats)
     if plot:
         fig=plt.figure()
         m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
@@ -90,18 +134,15 @@ def generate_regions(model='gfed', plot=False):
         m.drawparallels(np.arange(-90.,91.,30.))
         m.drawmeridians(np.arange(-180.,181.,60.))
         m.drawmapboundary(fill_color='white')
-        #cs = m.contourf(lons,lats, region_data, 100, cmap=plt.cm.rainbow, latlon=True)
         m.imshow(region_data, cmap=plt.cm.rainbow,  interpolation='none')
-        #cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-        #cb.set_label("Region number")
         plt.title("GFED Regions Interpolated for " + model)
         plt.show()
     else:
         return region_data
 
 
-def get_regional_var_grid(year, year_period, region, model, var='FC', for_map=False):
-    full_grid = load_var_grid(year,year_period,model,var,for_map)
+def get_regional_var_grid(year, year_period, region, model, var, per_area=True):
+    full_grid = load_var_grid(year,year_period,model,var,per_area)
     region_data = generate_regions(model)
     
     # Set desired region to 1 and every other region to 0.
@@ -112,14 +153,14 @@ def get_regional_var_grid(year, year_period, region, model, var='FC', for_map=Fa
     return regional_grid
     
     
-#generate_regions('inferno', True)
+#generate_regions('jsbach', True)
 
 
 #
 # Spatial Global Analysis Toolkit
 #
 
-def load_var_grid(year, year_period, model, var='FC', for_map=False):
+def load_var_grid(year, year_period, model, var='FC', per_area=True):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -132,7 +173,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
     spatial histogram for fuel consumption, burnt area, or emissions
     respectively. Default is fuel consumption.
     
-    for_map argument determines whether variables should be returned in
+    per_area argument determines whether variables should be returned in
     units of var/m^2 or in absolute terms. Default is False.
     """
     year_adj = year-1700
@@ -171,8 +212,8 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             grid = grid[::-1,:]
         elif model == 'inferno':
             grid = inferno.get_grid_fuel_consumption(year_adj,year_period*12,
-                     inferno.emis_Inferno,inferno.BA_Inferno,
-                     inferno.landmask_Inferno,inferno.landCover_Inferno)
+                     inferno.emis_INFERNO,inferno.BA_INFERNO,
+                     inferno.landmask_INFERNO,inferno.landCover_INFERNO)
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             
@@ -183,7 +224,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, gfed.grid_GFED["grid_cell_area"])
         elif model == 'jsbach':
             grid = jsbach.get_grid_emissions(year_adj,year_period*12,
@@ -192,7 +233,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             grid = grid[::-1,:]
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, jsbach.grid_JSBACH["area"])
         elif model == 'clm':
             grid = clm.get_grid_emissions(year_adj,year_period*12,
@@ -200,7 +241,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, clm.grid_CLM["cell_area"])
         elif model == 'ctem':
             grid = ctem.get_grid_emissions(year_ctem,year_period*12,
@@ -208,13 +249,13 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, ctem.grid_CTEM["cell_area"])
         elif model == 'blaze':
             grid = blaze.get_grid_emissions(year_adj,year_period*12,
                                blaze.emis_BLAZE,blaze.grid_BLAZE,blaze.time_data)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, blaze.grid_BLAZE["cell_area"])
         elif model == 'orchidee':
             grid = orchidee.get_grid_emissions(year_adj,year_period*12,
@@ -223,17 +264,17 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, orchidee.grid_ORCHIDEE["cell_area"])
         elif model == 'inferno':
             grid = inferno.get_grid_emissions(year_adj,year_period*12,
-                     inferno.emis_Inferno,inferno.grid_Inferno,
-                     inferno.landmask_Inferno,inferno.landCover_Inferno)
+                     inferno.emis_INFERNO,inferno.grid_INFERNO,
+                     inferno.landmask_INFERNO,inferno.landCover_INFERNO)
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
-                grid = np.divide(grid, inferno.grid_Inferno["cell_area"])
+            if per_area:
+                grid = np.divide(grid, inferno.grid_INFERNO["cell_area"])
                 
     elif var == 'BA':
         if model == 'gfed':
@@ -242,7 +283,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, gfed.grid_GFED["grid_cell_area"])
         elif model == 'jsbach':
             grid = jsbach.get_grid_burnt_area(year_adj,year_period*12,
@@ -251,7 +292,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             grid = grid[::-1,:]
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, jsbach.grid_JSBACH["area"])
         elif model == 'clm':
             grid = clm.get_grid_burnt_area(year_adj,year_period*12,
@@ -259,7 +300,7 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, clm.grid_CLM["cell_area"])
         elif model == 'ctem':
             grid = ctem.get_grid_burnt_area(year_ctem,year_period*12,
@@ -267,13 +308,13 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, ctem.grid_CTEM["cell_area"])
         elif model == 'blaze':
             grid = blaze.get_grid_burnt_area(year_adj,year_period*12,
                                blaze.BA_BLAZE,blaze.grid_BLAZE)
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, blaze.grid_BLAZE["cell_area"])
         elif model == 'orchidee':
             grid = orchidee.get_grid_burnt_area(year_adj,year_period*12,
@@ -282,17 +323,17 @@ def load_var_grid(year, year_period, model, var='FC', for_map=False):
             # Convert to standard format.
             grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
-            if for_map:
+            if per_area:
                 grid = np.divide(grid, orchidee.grid_ORCHIDEE["cell_area"])
         elif model == 'inferno':
             grid = inferno.get_grid_burnt_area(year_adj,year_period*12,
-                     inferno.BA_Inferno,inferno.grid_Inferno,
-                     inferno.landmask_Inferno,inferno.landCover_Inferno)
+                     inferno.BA_INFERNO,inferno.grid_INFERNO,
+                     inferno.landmask_INFERNO,inferno.landCover_INFERNO)
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
-            if for_map:
-                grid = np.divide(grid, inferno.grid_Inferno["cell_area"])
+            if per_area:
+                grid = np.divide(grid, inferno.grid_INFERNO["cell_area"])
                      
     return grid
 
@@ -318,9 +359,9 @@ def plot_map(year, year_period, model, var='FC', region=0):
     region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
                 'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']
                 
-    grid = load_var_grid(year, year_period, model, var, True)
+    grid = load_var_grid(year, year_period, model, var)
     if region != 0:
-        grid = get_regional_var_grid(year, year_period, region, model, var, True)
+        grid = get_regional_var_grid(year, year_period, region, model, var)
     
     # Convert zeroes to NaNs and take yearly mean.
     grid[grid==0]=np.nan
@@ -334,7 +375,7 @@ def plot_map(year, year_period, model, var='FC', region=0):
         units = '($kg\, C\, m^{-2}$)'
     elif var == 'BA':
         title = 'Burnt Area'
-        # Issue here, how to get normalised fraction per year?
+        # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned)'
         
     
@@ -377,17 +418,18 @@ def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
     
     grid = load_var_grid(year, year_period, model, var)
     if region != 0:
-        grid = get_regional_var_grid(year, year_period, region, model, var, True)
+        grid = get_regional_var_grid(year, year_period, region, model, var)
     
     if var == 'FC':
         title = 'Fuel Consumption'
         units = '($kg\, C\, m^{-2}\, burned$)'
     elif var == 'emis':
         title = 'Carbon Emissions'
-        units = '($kg\, C$)'
+        units = '($kg\, C\, m^{-2}$)'
     elif var == 'BA':
         title = 'Burnt Area'
-        units = '($m^2$)'
+        # Due to recurring fires in <year, not normalised.
+        units = '(Fraction Burned)'
     
     # Not needed, removing 0 values flattens.
     #flat_grid = np.ndarray.flatten(grid)
@@ -403,7 +445,7 @@ def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
     plt.show()
 
 
-def plot_multimodel_box(year, year_period, var='FC', region=0):
+def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
     """
     Year is given in absolute terms, e.g. 1997.
     
@@ -416,40 +458,59 @@ def plot_multimodel_box(year, year_period, var='FC', region=0):
     which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
     NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
     For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
+    
+    If model var is given a value from the available models, i.e. 
+    'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',and 'inferno',
+    then a box plot with a box for every region for the given model
+    will be plotted.
     """
     region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
                 'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']    
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno']
     data=[]              
-    for model in model_list:
-        grid = load_var_grid(year, year_period, model, var, True)
-        if region != 0:
-            grid = get_regional_var_grid(year, year_period, region, model, var, True)
-        flat_grid = grid[grid > 0]
-        flat_grid = np.divide(flat_grid, year_period)
-        data.append(flat_grid)
+    if model=='all':     
+        x_labels = model_list
+        title_end = region_names[region]
+        for model_name in model_list:
+            grid = load_var_grid(year, year_period, model_name, var)
+            if region != 0:
+                grid = get_regional_var_grid(year, year_period, 
+                                        region, model_name, var)
+            flat_grid = grid[grid > 0]
+            flat_grid = np.divide(flat_grid, year_period)
+            data.append(flat_grid)
+    else:
+        x_labels = region_names[1:]
+        title_end = model
+        for region in range(1,len(region_names)):
+            grid = get_regional_var_grid(year, year_period, 
+                                        region, model, var)
+            flat_grid = grid[grid > 0]
+            flat_grid = np.divide(flat_grid, year_period)
+            data.append(flat_grid)
       
     if var == 'FC':
         title = 'Fuel Consumption'
         units = '($kg\, C\, m^{-2}\, burned$)'
     elif var == 'emis':
         title = 'Carbon Emissions'
-        units = '($kg\, C$)'
+        units = '($kg\, C\, m^{-2}$)'
     elif var == 'BA':
         title = 'Burnt Area'
-        units = '($m^2$)'
+        # Due to recurring fires in <year, not normalised.
+        units = '(Fraction Burned)'
    
     plt.boxplot(data, showmeans=True, whis=[5,95], sym='', 
-                labels = model_list)
+                labels = x_labels)
     plt.ylabel(title +' '+ units)
     plt.title('Box plot of '+title+' for '+str(year)+
-            '-'+str(year+year_period)+', '+region_names[region])
+            '-'+str(year+year_period)+', '+title_end)
     plt.show()
 
 
-#plot_map(1997,2,'inferno', 'FC')
-#plot_multimodel_box(1997,1,'emis')
+#plot_map(1997,1,'clm', 'FC')
+#plot_multimodel_box(1997,15,'FC', model='inferno')
 #plot_spatial_histogram(1997, 5, 'clm')
 
 

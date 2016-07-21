@@ -37,8 +37,8 @@ def plot_present_emissions(pearson=False):
             orchidee.emis_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE, orchidee.time_data))
         inferno_data.append(inferno.get_global_emissions_yearly(297+i,
-            inferno.emis_Inferno, inferno.grid_Inferno, 
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.emis_INFERNO, inferno.grid_INFERNO, 
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
         
         gfed_data.append(gfed.get_global_emissions_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
@@ -106,8 +106,8 @@ def plot_present_burnt_area(pearson=False):
             orchidee.BA_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE))
         inferno_data.append(inferno.get_global_BA_yearly(297+i,
-            inferno.BA_Inferno, inferno.grid_Inferno, 
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.BA_INFERNO, inferno.grid_INFERNO, 
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
         
         gfed_data.append(gfed.get_global_BA_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
@@ -177,8 +177,8 @@ def plot_present_fuel_consumption():
             orchidee.emis_ORCHIDEE, orchidee.BA_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE, orchidee.time_data))
         inferno_data.append(inferno.get_global_mean_FC_yearly(297+i,
-            inferno.emis_Inferno, inferno.BA_Inferno, inferno.grid_Inferno,
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.emis_INFERNO, inferno.BA_INFERNO, inferno.grid_INFERNO,
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
             
         gfed_data.append(gfed.get_global_mean_FC_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
@@ -228,8 +228,8 @@ def plot_present_fuel_consumption_rough(pearson = False):
             orchidee.emis_ORCHIDEE, orchidee.BA_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE, orchidee.time_data))
         inferno_data.append(inferno.get_global_mean_FC_yearly_rough(297+i,
-            inferno.emis_Inferno, inferno.BA_Inferno, inferno.grid_Inferno,
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.emis_INFERNO, inferno.BA_INFERNO, inferno.grid_INFERNO,
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
             
         gfed_data.append(gfed.get_global_mean_FC_yearly_rough(i,
                         gfed.data_GFED,gfed.grid_GFED))
@@ -312,8 +312,8 @@ def plot_past_emissions():
             orchidee.emis_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE, orchidee.time_data))
         inferno_data.append(inferno.get_global_emissions_yearly(i,
-            inferno.emis_Inferno, inferno.grid_Inferno, 
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.emis_INFERNO, inferno.grid_INFERNO, 
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
             
     for i in range(len(years[161:])):
         # Progress Bar
@@ -370,8 +370,8 @@ def plot_past_burnt_area():
             orchidee.BA_ORCHIDEE, orchidee.grid_ORCHIDEE,
             orchidee.landCover_ORCHIDEE))
         inferno_data.append(inferno.get_global_BA_yearly(i,
-            inferno.BA_Inferno, inferno.grid_Inferno, 
-            inferno.landmask_Inferno, inferno.landCover_Inferno))
+            inferno.BA_INFERNO, inferno.grid_INFERNO, 
+            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
             
     for i in range(len(years[161:])):
         # Progress Bar

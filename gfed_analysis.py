@@ -49,35 +49,8 @@ def plot_global_BA_yearly(no_years, data, grid_data):
     plt.legend()
     plt.show()
 
-def plot_burnt_area_map_period(year_start, year_period, data, grid_data):
-    map_data = get_grid_burnt_area(year_start, year_period*12, data, grid_data)
-    # Change units.
-    map_data = np.divide(map_data, 1e9)
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    
-    lats = data["lat"][:,0]
-    lons = data["lon"][0,:]
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Burnt Area (billions of $m^2$)")
-    plt.title("Mean Burnt Area, GFED")
-    plt.show()
- 
     
 #plot_global_BA_yearly(16,data_GFED, grid_GFED)
-#plot_burnt_area_map_period(0,1,data_GFED, grid_GFED) 
 #print get_global_BA_yearly(10, data_GFED, grid_GFED)
 
 
@@ -121,35 +94,8 @@ def plot_global_emissions_yearly(no_years, data, grid_data):
     plt.xlabel('Year')
     plt.legend()
     plt.show()
-
-def plot_emissions_map_period(year_start, year_period, data, grid_data):
-    month_period = int(year_period*12)
-    map_data = get_grid_emissions(year_start,month_period,data,grid_data)
-    # Convert to billions of kg.
-    map_data = np.multiply(map_data, (1./(10**9)))
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    lats = data["lat"][:,0]
-    lons = data["lon"][0,:]
-    lons, lats = np.meshgrid(lons, lats)
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Billions of kg of Carbon")
-    plt.title("Mean Emissions, GFED")
-    plt.show()
         
 
-#plot_emissions_map_period(0,17,data_GFED,grid_GFED)
 #plot_global_emissions_yearly(17,data_GFED,grid_GFED)
 #print get_global_emissions_yearly(10, data_GFED,grid_GFED)
 
@@ -212,34 +158,6 @@ def plot_global_mean_FC_yearly(no_years, data, grid_data):
     plt.legend()
     plt.show()
     
-    
-def plot_FC_map_period(year_start, year_period, data):
-    month_period = int(year_period*12)
-    map_data = get_grid_fuel_consumption(year_start,month_period,data)
-    # Replace 0 by nan, take mean.
-    map_data[map_data==0]=np.nan
-    map_data = np.divide(map_data,year_period)
-    
-    lats = data["lat"][:,0]
-    lons = data["lon"][0,:]
-    lons, lats = np.meshgrid(lons, lats)
-       
-
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, 
-        urcrnrlon=180,urcrnrlat=80,projection='mill')
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs = m.contourf(lons,lats, map_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    #cs = m.contourf(lons,lats, map_data, 100, cmap=cm.GMT_haxby, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Carbon emitted per area burned ($kg\, C / m^2 \, burned $)")
-    plt.title("Mean Fuel Consumption, GFED")
-    plt.show()   
-
 
 #print get_global_mean_FC_yearly_rough(10,data_GFED,grid_GFED)
 #plot_global_mean_FC_yearly(17,data_GFED,grid_GFED)
-#plot_FC_map_period(0,1,data_GFED)
