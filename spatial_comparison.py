@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+import matplotlib.colors as clb
 from mpl_toolkits.basemap import Basemap, cm, interp
 import scipy.interpolate as intrplt
 
@@ -29,30 +30,30 @@ def create_box_regions(lons,lats):
     regions = np.empty(lons.shape)
     for index,lon in np.ndenumerate(lons):
         lat = lats[index]
-        if -170.<lon<-30.:
-            if 45.<lat<90.:
+        if -170.<=lon<-30.:
+            if 45.<=lat<90.:
                 regions[index]=1
-            elif 20.<lat<45.:
+            elif 20.<=lat<45.:
                 regions[index]=2
-            elif -25.<lat<20.:
+            elif -25.<=lat<20.:
                 regions[index]=3
             else:
                 regions[index]=4
-        elif -30.<lon<60:
-            if 45.<lat<90.:
+        elif -30.<=lon<60:
+            if 45.<=lat<90.:
                 regions[index]=5
-            elif 15.<lat<45.:
+            elif 15.<=lat<45.:
                 regions[index]=6
-            elif -15.<lat<15.:
+            elif -15.<=lat<15.:
                 regions[index]=7
             else:
                 regions[index]=8
         else:
-            if 45.<lat<90.:
+            if 45.<=lat<90.:
                 regions[index]=9
-            elif 20.<lat<50.:
+            elif 20.<=lat<50.:
                 regions[index]=10
-            elif -10.<lat<20.:
+            elif -10.<=lat<20.:
                 regions[index]=11
             else:
                 regions[index]=12
@@ -79,17 +80,28 @@ def interp_regions(lons, lats):
     return regions
 
 
-def generate_regions(model='gfed', plot=False):
+def generate_regions(model='gfed', reg_type='boxes', plot=False):
     """
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
     'inferno'
+        
+    Argument reg_type can be set to either 'gfed' or 'boxes' to
+    generate the interpolated GFED regions or boxed latlon regions
+    respectively. The boxed latlon regions are the preferred method
+    and are the default.
+    
+    Argument plot can be set to True to show regions on map.
     """
     no_interp = False
     if model=='gfed':
-        lats = gfed.data_GFED["lat"][:,0]
-        lons = gfed.data_GFED["lon"][0,:]
-        no_interp = True
+        #lats = gfed.data_GFED["lat"][:,0]
+        #lons = gfed.data_GFED["lon"][0,:]
+        #lats = lats[::-1]
+        lats = np.arange(-89.875, 90.,0.25)
+        lons = np.arange(-179.875, 180.,0.25)
+        if reg_type=='gfed':
+            no_interp = True
     elif model=='jsbach':
         lats = jsbach.grid_JSBACH["latitude"]
         lats = np.array(lats)
@@ -123,9 +135,10 @@ def generate_regions(model='gfed', plot=False):
     if no_interp:
         region_data = gfed.grid_GFED["basis_regions"]
         region_data = region_data[::-1,:]
-    else:
+    elif reg_type=='gfed':
         region_data = interp_regions(lons, lats)
-        #region_data = create_box_regions(lons,lats)
+    else:
+        region_data = create_box_regions(lons,lats)
     if plot:
         fig=plt.figure()
         m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
@@ -141,9 +154,10 @@ def generate_regions(model='gfed', plot=False):
         return region_data
 
 
-def get_regional_var_grid(year, year_period, region, model, var, per_area=True):
+def get_regional_var_grid(year, year_period, region, model, 
+                            var, reg_type, per_area=True):
     full_grid = load_var_grid(year,year_period,model,var,per_area)
-    region_data = generate_regions(model)
+    region_data = generate_regions(model, reg_type)
     
     # Set desired region to 1 and every other region to 0.
     region_data[region_data != region] = 0.
@@ -153,7 +167,7 @@ def get_regional_var_grid(year, year_period, region, model, var, per_area=True):
     return regional_grid
     
     
-#generate_regions('jsbach', True)
+#generate_regions('inferno', plot=True)
 
 
 #
@@ -338,7 +352,8 @@ def load_var_grid(year, year_period, model, var='FC', per_area=True):
     return grid
 
 
-def plot_map(year, year_period, model, var='FC', region=0):
+def plot_map(year, year_period, model, var='FC', 
+                region=0, reg_type='boxes', binned=False):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -351,33 +366,128 @@ def plot_map(year, year_period, model, var='FC', region=0):
     spatial histogram for fuel consumption, burnt area, or emissions
     respectively.
     
-    To plot regional data, set value of region argument from 1 to 14, 
+    To plot regional data using boxed regions (for no interpolation
+    errors) leave the reg_type argument to the default 'boxes' and
+    set the region argument from 1 to 12, which corresponds to 
+    Boreal North America (BONA), Temperate North America (TENA),
+    Equatorial Central and South America (EQCSA), Southernmost
+    America (SOMA), Northern Europe (NOEU), Mediterranean
+    and Middle East (MEME), Equatorial Africa (EQAF), Southernmost 
+    Africa (SOAF), Boreal Asia (BOAS), Central Asia (CEAS),
+    Equatorial Asia (EQAS), Australia/Oceania (AUST).
+    
+    To plot regional data using the GFED regions, set reg_type argument
+    to 'gfed' and then set value of region argument from 1 to 14, 
     which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
     NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
-    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
+    For details regarding the GFED regions, go to 
+    http://www.globalfiredata.org/data.html.
+    
+    If binned is set to True, the map will be plotted with binned values
+    and a discrete colorbar following the GFED bin convention.
     """
-    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
-                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']
+    if reg_type=='boxes':
+        region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
+                        'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
+    elif reg_type=='gfed':
+        region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
+                        'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
+                        'SEAS','EQAS','AUST']
                 
     grid = load_var_grid(year, year_period, model, var)
     if region != 0:
-        grid = get_regional_var_grid(year, year_period, region, model, var)
+        grid = get_regional_var_grid(year, year_period, region, 
+                                    model, var, reg_type)
     
     # Convert zeroes to NaNs and take yearly mean.
     grid[grid==0]=np.nan
-    grid = np.divide(grid, year_period)
+    #grid = np.divide(grid, year_period)
     
     if var == 'FC':
         title = 'Fuel Consumption'
         units = '($kg\, C\, m^{-2}\, burned$)'
+        if binned:
+            ticks=[0,.05,.1,.2,.5,1.,2.,5.,10.,'>20.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(grid):
+                bin = 'nan'
+                if 0.<value<0.05:
+                    bin = 0
+                elif 0.05<=value<0.1:
+                    bin = 1
+                elif 0.1<=value<0.2:
+                    bin = 2
+                elif 0.2<=value<0.5:
+                    bin = 3
+                elif 0.5<=value<1.:
+                    bin = 4
+                elif 1.<=value<2.:
+                    bin = 5
+                elif 2.<=value<5.:
+                    bin = 6
+                elif 5.<=value<10.:
+                    bin = 7
+                elif 10.<=value:
+                    bin = 8
+                if bin != 'nan':    
+                    grid[index] = bin
     elif var == 'emis':
         title = 'Carbon Emissions'
         units = '($kg\, C\, m^{-2}$)'
+        if binned:
+            ticks=[0.,.005,.01,.02,.05,.1,.2,.5,1.,'>5.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(grid):
+                bin = 'nan'
+                if 0.<value<0.005:
+                    bin = 0
+                elif 0.005<=value<0.01:
+                    bin = 1
+                elif 0.01<=value<0.02:
+                    bin = 2
+                elif 0.02<=value<0.05:
+                    bin = 3
+                elif 0.05<=value<0.1:
+                    bin = 4
+                elif 0.1<=value<0.2:
+                    bin = 5
+                elif 0.2<=value<0.5:
+                    bin = 6
+                elif 0.5<=value<1.:
+                    bin = 7
+                elif 1.<=value:
+                    bin = 8
+                if bin != 'nan':    
+                    grid[index] = bin
     elif var == 'BA':
         title = 'Burnt Area'
         # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned)'
-        
+        if binned:
+            ticks=[0,.002,.005,.01,.02,.05,.1,.2,.5,'>1.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(grid):
+                bin = 'nan'
+                if 0.<value<0.002:
+                    bin = 0
+                elif 0.002<=value<0.005:
+                    bin = 1
+                elif 0.005<=value<0.01:
+                    bin = 2
+                elif 0.01<=value<0.02:
+                    bin = 3
+                elif 0.02<=value<0.05:
+                    bin = 4
+                elif 0.05<=value<0.1:
+                    bin = 5
+                elif 0.1<=value<0.2:
+                    bin = 6
+                elif 0.2<=value<0.5:
+                    bin = 7
+                elif 0.5<=value:
+                    bin = 8
+                if bin != 'nan':    
+                    grid[index] = bin
     
     
     fig=plt.figure()
@@ -388,14 +498,19 @@ def plot_map(year, year_period, model, var='FC', region=0):
     m.drawmeridians(np.arange(-180.,181.,60.))
     m.drawmapboundary(fill_color='white')
     cs=m.imshow(grid, interpolation='none')
-    cb=m.colorbar(cs, "bottom", size="5%", pad="2%")
+    if binned:
+        cb=m.colorbar(cs, "bottom", boundaries=bounds)
+        cb.ax.set_xticklabels(ticks)
+    else:
+        cb=m.colorbar(cs, "bottom")
     cb.set_label(title + ' ' + units)
     plt.title('Mean '+title+' for '+str(year)+'-'+
         str(year+year_period)+', '+region_names[region]+', '+model)
     plt.show()
 
 
-def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
+def plot_spatial_histogram(year, year_period, model, 
+                var='FC', region=0, reg_type='boxes'):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -408,17 +523,35 @@ def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
     spatial histogram for fuel consumption, burnt area, or emissions
     respectively.
     
-    To use regional data, set value of region argument from 1 to 14, 
+    To plot regional data using boxed regions (for no interpolation
+    errors) leave the reg_type argument to the default 'boxes' and
+    set the region argument from 1 to 12, which corresponds to 
+    Boreal North America (BONA), Temperate North America (TENA),
+    Equatorial Central and South America (EQCSA), Southernmost
+    America (SOMA), Northern Europe (NOEU), Mediterranean
+    and Middle East (MEME), Equatorial Africa (EQAF), Southernmost 
+    Africa (SOAF), Boreal Asia (BOAS), Central Asia (CEAS),
+    Equatorial Asia (EQAS), Australia/Oceania (AUST).
+    
+    To plot regional data using the GFED regions, set reg_type argument
+    to 'gfed' and then set value of region argument from 1 to 14, 
     which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
     NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
-    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
+    For details regarding the GFED regions, go to 
+    http://www.globalfiredata.org/data.html.
     """
-    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
-                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']
-    
+    if reg_type=='boxes':
+        region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
+                        'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
+    elif reg_type=='gfed':
+        region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
+                        'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
+                        'SEAS','EQAS','AUST']
+                
     grid = load_var_grid(year, year_period, model, var)
     if region != 0:
-        grid = get_regional_var_grid(year, year_period, region, model, var)
+        grid = get_regional_var_grid(year, year_period, region, 
+                                    model, var, reg_type)
     
     if var == 'FC':
         title = 'Fuel Consumption'
@@ -445,7 +578,8 @@ def plot_spatial_histogram(year, year_period, model, var='FC', region=0):
     plt.show()
 
 
-def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
+def plot_multimodel_box(year, year_period, var='FC', 
+                region=0, reg_type='boxes', model='all'):
     """
     Year is given in absolute terms, e.g. 1997.
     
@@ -454,18 +588,31 @@ def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
     boxplots for fuel consumption, burnt area, or emissions
     respectively.
     
-    To use regional data, set value of region argument from 1 to 14, 
+    To plot regional data using boxed regions (for no interpolation
+    errors) leave the reg_type argument to the default 'boxes' and
+    set the region argument from 1 to 12, which corresponds to 
+    Boreal North America (BONA), Temperate North America (TENA),
+    Equatorial Central and South America (EQCSA), Southernmost
+    America (SOMA), Northern Europe (NOEU), Mediterranean
+    and Middle East (MEME), Equatorial Africa (EQAF), Southernmost 
+    Africa (SOAF), Boreal Asia (BOAS), Central Asia (CEAS),
+    Equatorial Asia (EQAS), Australia/Oceania (AUST).
+    
+    To plot regional data using the GFED regions, set reg_type argument
+    to 'gfed' and then set value of region argument from 1 to 14, 
     which correspond to BONA, TENA, CEAM, NHSA. SHSA, EURO, MIDE, 
     NHAF, SHAF, BOAS, CEAS, SEAS, EQAS, AUST respectively.
-    For details regarding the GFED regions, go to http://www.globalfiredata.org/data.html.
-    
-    If model var is given a value from the available models, i.e. 
-    'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',and 'inferno',
-    then a box plot with a box for every region for the given model
-    will be plotted.
+    For details regarding the GFED regions, go to 
+    http://www.globalfiredata.org/data.html.
     """
-    region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA','EURO','MIDE', 
-                'NHAF','SHAF','BOAS','CEAS','SEAS','EQAS','AUST']    
+    if reg_type=='boxes':
+        region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
+                        'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
+    elif reg_type=='gfed':
+        region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
+                        'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
+                        'SEAS','EQAS','AUST']
+                        
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno']
     data=[]              
@@ -476,7 +623,7 @@ def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
             grid = load_var_grid(year, year_period, model_name, var)
             if region != 0:
                 grid = get_regional_var_grid(year, year_period, 
-                                        region, model_name, var)
+                                       region, model_name, var, reg_type)
             flat_grid = grid[grid > 0]
             flat_grid = np.divide(flat_grid, year_period)
             data.append(flat_grid)
@@ -485,7 +632,7 @@ def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
         title_end = model
         for region in range(1,len(region_names)):
             grid = get_regional_var_grid(year, year_period, 
-                                        region, model, var)
+                                       region, model, var, reg_type)
             flat_grid = grid[grid > 0]
             flat_grid = np.divide(flat_grid, year_period)
             data.append(flat_grid)
@@ -509,8 +656,8 @@ def plot_multimodel_box(year, year_period, var='FC', region=0, model='all'):
     plt.show()
 
 
-#plot_map(1997,1,'clm', 'FC')
-#plot_multimodel_box(1997,15,'FC', model='inferno')
+#plot_map(1997,17,'gfed', 'FC', binned=True)
+#plot_multimodel_box(1997,1,'FC', model='orchidee')
 #plot_spatial_histogram(1997, 5, 'clm')
 
 
