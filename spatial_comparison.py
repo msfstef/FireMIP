@@ -1,3 +1,9 @@
+"""
+This module is used for spatial analysis of the
+models. For a temporal analysis, use the
+model_comparison module.
+"""
+
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
@@ -60,16 +66,10 @@ def create_box_regions(lons,lats):
     return regions
 
 
-def interp_regions(lons, lats):
+def interp_regions(lons, lats, var='none'):
     regions_GFED = gfed.grid_GFED["basis_regions"]
     regions_GFED = np.array(regions_GFED)
-    
-    # GFED's lats and lons have issue, generated my own.    
-    #lats_gfed = gfed.data_GFED["lat"]
-    #lats_gfed = np.array(lats_gfed)
-    #lons_gfed = gfed.data_GFED["lon"]
-    #lons_gfed = np.array(lons_gfed)
-    
+
     lats_gfed = np.arange(-89.875, 90.,0.25)
     lats_gfed = lats_gfed[::-1]
     lons_gfed = np.arange(-179.875, 180.,0.25)
@@ -95,9 +95,6 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
     """
     no_interp = False
     if model=='gfed':
-        #lats = gfed.data_GFED["lat"][:,0]
-        #lons = gfed.data_GFED["lon"][0,:]
-        #lats = lats[::-1]
         lats = np.arange(-89.875, 90.,0.25)
         lons = np.arange(-179.875, 180.,0.25)
         if reg_type=='gfed':
@@ -131,7 +128,7 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
         lons = np.array(lons) - np.max(lons)/2.
       
     lons, lats = np.meshgrid(lons, lats)
-
+    
     if no_interp:
         region_data = gfed.grid_GFED["basis_regions"]
         region_data = region_data[::-1,:]
@@ -353,7 +350,7 @@ def load_var_grid(year, year_period, model, var='FC', per_area=True):
 
 
 def plot_map(year, year_period, model, var='FC', 
-                region=0, reg_type='boxes', binned=False):
+         region=0, reg_type='boxes', binned=False, save=False):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -401,7 +398,8 @@ def plot_map(year, year_period, model, var='FC',
     
     # Convert zeroes to NaNs and take yearly mean.
     grid[grid==0]=np.nan
-    #grid = np.divide(grid, year_period)
+    if var != 'FC':
+        grid = np.divide(grid, year_period)
     
     if var == 'FC':
         title = 'Fuel Consumption'
@@ -433,7 +431,7 @@ def plot_map(year, year_period, model, var='FC',
                     grid[index] = bin
     elif var == 'emis':
         title = 'Carbon Emissions'
-        units = '($kg\, C\, m^{-2}$)'
+        units = '($kg\, C\, m^{-2}\, year^{-1}$)'
         if binned:
             ticks=[0.,.005,.01,.02,.05,.1,.2,.5,1.,'>5.0']
             bounds=[0,1,2,3,4,5,6,7,8,9]
@@ -462,7 +460,7 @@ def plot_map(year, year_period, model, var='FC',
     elif var == 'BA':
         title = 'Burnt Area'
         # Due to recurring fires in <year, not normalised.
-        units = '(Fraction Burned)'
+        units = '(Fraction Burned per Year)'
         if binned:
             ticks=[0,.002,.005,.01,.02,.05,.1,.2,.5,'>1.0']
             bounds=[0,1,2,3,4,5,6,7,8,9]
@@ -506,7 +504,10 @@ def plot_map(year, year_period, model, var='FC',
     cb.set_label(title + ' ' + units)
     plt.title('Mean '+title+' for '+str(year)+'-'+
         str(year+year_period)+', '+region_names[region]+', '+model)
-    plt.show()
+    if save:
+        return fig
+    else:
+        plt.show()
 
 
 def plot_spatial_histogram(year, year_period, model, 
@@ -558,16 +559,17 @@ def plot_spatial_histogram(year, year_period, model,
         units = '($kg\, C\, m^{-2}\, burned$)'
     elif var == 'emis':
         title = 'Carbon Emissions'
-        units = '($kg\, C\, m^{-2}$)'
+        units = '($kg\, C\, m^{-2} \, year^{-1}$)'
     elif var == 'BA':
         title = 'Burnt Area'
         # Due to recurring fires in <year, not normalised.
-        units = '(Fraction Burned)'
+        units = '(Fraction Burned per Year)'
     
     # Not needed, removing 0 values flattens.
     #flat_grid = np.ndarray.flatten(grid)
     flat_grid = grid[grid > 0]
-    flat_grid = np.divide(flat_grid, year_period)
+    if var!='FC':
+        flat_grid = np.divide(flat_grid, year_period)
     plt.hist(flat_grid, 50, normed=1, facecolor='blue', alpha=0.75)
     
     plt.xlabel(title + ' ' + units)
@@ -625,7 +627,8 @@ def plot_multimodel_box(year, year_period, var='FC',
                 grid = get_regional_var_grid(year, year_period, 
                                        region, model_name, var, reg_type)
             flat_grid = grid[grid > 0]
-            flat_grid = np.divide(flat_grid, year_period)
+            if var!='FC':
+                flat_grid = np.divide(flat_grid, year_period)
             data.append(flat_grid)
     else:
         x_labels = region_names[1:]
@@ -634,7 +637,8 @@ def plot_multimodel_box(year, year_period, var='FC',
             grid = get_regional_var_grid(year, year_period, 
                                        region, model, var, reg_type)
             flat_grid = grid[grid > 0]
-            flat_grid = np.divide(flat_grid, year_period)
+            if var!='FC':
+                flat_grid = np.divide(flat_grid, year_period)
             data.append(flat_grid)
       
     if var == 'FC':
@@ -642,11 +646,11 @@ def plot_multimodel_box(year, year_period, var='FC',
         units = '($kg\, C\, m^{-2}\, burned$)'
     elif var == 'emis':
         title = 'Carbon Emissions'
-        units = '($kg\, C\, m^{-2}$)'
+        units = '($kg\, C\, m^{-2} \, year^{-1}$)'
     elif var == 'BA':
         title = 'Burnt Area'
         # Due to recurring fires in <year, not normalised.
-        units = '(Fraction Burned)'
+        units = '(Fraction Burned per Year)'
    
     plt.boxplot(data, showmeans=True, whis=[5,95], sym='', 
                 labels = x_labels)
@@ -656,9 +660,172 @@ def plot_multimodel_box(year, year_period, var='FC',
     plt.show()
 
 
-#plot_map(1997,17,'gfed', 'FC', binned=True)
-#plot_multimodel_box(1997,1,'FC', model='orchidee')
-#plot_spatial_histogram(1997, 5, 'clm')
+#plot_map(1997,15,'inferno', 'FC', binned=True)
+#plot_multimodel_box(1997,15,'FC', model='blaze')
+#plot_spatial_histogram(1997, 15, 'inferno')
 
 
+#
+# Spatial Comparison Maps and Correlations
+#
+
+
+def interp_GFED_func(lons, lats, var, year, year_period):
+    GFED_data = load_var_grid(year,year_period,'gfed',var)
+    
+    
+    lats_gfed = np.arange(-89.875, 90.,0.25)
+    lons_gfed = np.arange(-179.875, 180.,0.25)
+    lons_gfed, lats_gfed = np.meshgrid(lons_gfed, lats_gfed)
+    
+    new_grid = intrplt.griddata((lons_gfed.ravel(),lats_gfed.ravel()), 
+                  GFED_data.ravel(), (lons,lats), method='nearest')
+    return new_grid
+
+
+def interp_GFED_grid(year, year_period, model, var='FC', plot=False):
+    """
+    Takes argument model, which is a string that can be one of the
+    following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
+    'inferno'
+        
+    Argument reg_type can be set to either 'gfed' or 'boxes' to
+    generate the interpolated GFED regions or boxed latlon regions
+    respectively. The boxed latlon regions are the preferred method
+    and are the default.
+    
+    Argument plot can be set to True to show regions on map.
+    """
+    no_interp = False
+    if model=='gfed':
+        lats = np.arange(-89.875, 90.,0.25)
+        lons = np.arange(-179.875, 180.,0.25)
+    elif model=='jsbach':
+        lats = jsbach.grid_JSBACH["latitude"]
+        lats = np.array(lats)
+        lats = lats[::-1]
+        lons = jsbach.grid_JSBACH["longitude"]
+        lons = np.array(lons) - np.max(lons)/2.
+    elif model=='clm':
+        lats = clm.grid_CLM["lat"]
+        lons = clm.grid_CLM["lon"]
+        lons = np.array(lons) - np.max(lons)/2.
+        
+    elif model=='ctem':
+        lats = ctem.grid_CTEM["lat"]
+        lons = ctem.grid_CTEM["lon"]
+        lons = np.array(lons) - np.max(lons)/2.
+    elif model=='blaze':
+        lats = blaze.grid_BLAZE["lat"]
+        lons = blaze.grid_BLAZE["lon"]
+    elif model=='orchidee':
+        lats = orchidee.grid_ORCHIDEE["latitude"]
+        lats = np.array(lats)
+        lats = lats[::-1]
+        lons = orchidee.grid_ORCHIDEE["longitude"]
+    elif model=='inferno':
+        lats = inferno.grid_INFERNO["latitude"]
+        lons = inferno.grid_INFERNO["longitude"]  
+        lons = np.array(lons) - np.max(lons)/2.
+      
+    lons, lats = np.meshgrid(lons, lats)
+    
+    new_grid = interp_GFED_func(lons,lats,var,year,year_period)
+
+    if plot:
+        fig=plt.figure()
+        m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
+            urcrnrlon=180,urcrnrlat=90)
+        m.drawcoastlines()
+        m.drawparallels(np.arange(-90.,91.,30.))
+        m.drawmeridians(np.arange(-180.,181.,60.))
+        m.drawmapboundary(fill_color='white')
+        m.imshow(new_grid,  interpolation='none')
+        plt.title("GFED Data Interpolated for " + model)
+        plt.show()
+    else:
+        return new_grid
+
+def calc_spatial_correlation(year, year_period, model, var):
+    GFED_grid = interp_GFED_grid(year,year_period,model,var)
+    model_grid = load_var_grid(year,year_period,model,var)
+    
+    GFED_flat = GFED_grid.flatten()
+    model_flat = model_grid.flatten()
+    
+    pearson = stats.pearsonr(GFED_flat, model_flat)
+    return pearson
+    
+    
+def get_spatial_correlations(year, year_period, var):
+    model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno']
+    pearson_list = []
+    for model in model_list[1:]:
+        pearson = calc_spatial_correlation(year,year_period,model,var)
+        pearson_list.append(pearson)
+    
+    print('Table of Correlations for '+var+' for '+
+            str(year)+'-'+str(year+year_period))
+    print('===========================================')
+    for i in range(len(pearson_list)):
+        print(model_list[i+1]+': ', pearson_list[i])
+    return pearson_list
+
+
+def plot_diff_map(year, year_period, model, var, binned=True):
+    GFED_grid = interp_GFED_grid(year,year_period,model,var)
+    GFED_grid = np.array(GFED_grid)
+    model_grid = load_var_grid(year,year_period,model,var)
+    model_grid = np.array(model_grid)
+    
+    diff_grid = np.divide(model_grid-GFED_grid,GFED_grid)
+    diff_grid = np.multiply(diff_grid, 100)
+    
+    if binned:
+            ticks=['<-200',-150,-100,-50,0,50,100,150,'>200']
+            bounds=[-200,-150,-100,-50,0,50,100,150,200]
+            for index,value in np.ndenumerate(diff_grid):
+                bin = 'nan'
+                if value<-150:
+                    bin = bounds[0]
+                elif -150<=value<-100:
+                    bin = bounds[1]
+                elif -100<=value<-50:
+                    bin = bounds[2]
+                elif -50<=value<0:
+                    bin = bounds[3]
+                elif 0<=value<50:
+                    bin = bounds[4]
+                elif 50<=value<100:
+                    bin = bounds[5]
+                elif 100<=value<150:
+                    bin = bounds[6]
+                elif 150<=value:
+                    bin = bounds[7]
+                if bin != 'nan':    
+                    diff_grid[index] = bin
+    
+    fig=plt.figure()
+    m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
+        urcrnrlon=180,urcrnrlat=90)
+    m.drawcoastlines()
+    m.drawparallels(np.arange(-90.,91.,30.))
+    m.drawmeridians(np.arange(-180.,181.,60.))
+    m.drawmapboundary(fill_color='white')
+    cs=m.imshow(diff_grid,  interpolation='none')
+    plt.title("Relative Difference in "+var+
+                ", GFED vs "+ model)
+    if binned:
+        cb=m.colorbar(cs, "bottom", boundaries=bounds)
+        cb.ax.set_xticklabels(ticks)
+    else:
+        cb=m.colorbar(cs, "bottom")
+    cb.set_label('Relative Difference (%)')
+    plt.show()
+    
+
+
+#get_spatial_correlations(1997,15,'FC')
+#plot_diff_map(1997,15,'clm','FC')
 

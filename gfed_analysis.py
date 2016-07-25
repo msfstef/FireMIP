@@ -104,7 +104,7 @@ def plot_global_emissions_yearly(no_years, data, grid_data):
 # Fuel Consumption Analysis
 #
 
-def get_grid_fuel_consumption(year_start, month_period, data):
+def get_grid_fuel_consumption(year_start, month_period, data, monthly=False):
     time = int(year_start*12)
     
     # Ignore division by zero warning. Returns NaN.
@@ -113,6 +113,8 @@ def get_grid_fuel_consumption(year_start, month_period, data):
     BA = np.array(data["BA"][time:time+month_period])
     # Convert to fractional.
     BA = np.divide(BA,100.)
+    if not monthly:
+        BA = np.sum(BA, axis=0)
     inverse_BA = 1./BA
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
@@ -120,10 +122,12 @@ def get_grid_fuel_consumption(year_start, month_period, data):
     emis = data["C"][time:time+month_period]
     # Convert from g to kg.
     emis = np.divide(emis, 1000)
+    if not monthly:
+        emis = np.sum(emis, axis=0)
     
-    FC_data = np.multiply(emis, inverse_BA)                     
-
-    fuel_consumption = np.sum(FC_data, axis = 0)
+    fuel_consumption = np.multiply(emis, inverse_BA)
+    if monthly:
+        fuel_consumption = np.sum(FC_data, axis = 0)
     return fuel_consumption
     
     

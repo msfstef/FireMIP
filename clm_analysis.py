@@ -135,7 +135,7 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, time_data):
 #
 
 
-def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time_data):
+def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time_data, monthly=False):
     time = int(year_start*12)
     days_per_month = []
     if (time+12) == len(time_data["time"]):
@@ -156,16 +156,21 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time
     
     BA = np.multiply(BA_data["BAF"][time:time+month_period], days_per_month[:, np.newaxis,np.newaxis])
     BA = np.divide(BA,100)
+    if not monthly:
+        BA = np.sum(BA, axis=0)
     inverse_BA = 1./BA
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
     
     # Burnt area data per pft is not available, so I use CFFIRE for this calculation.
-    actual_emission_data = emis_data["CFFIRE"][time:time+month_period]
-    FC_data = np.multiply(actual_emission_data, inverse_BA)
-
-    FC_per_month = np.multiply(FC_data, sec_per_month[:, np.newaxis, np.newaxis])
-    fuel_consumption = np.sum(FC_per_month, axis = 0)
+    emis = emis_data["CFFIRE"][time:time+month_period]
+    emis = np.multiply(emis, sec_per_month[:, np.newaxis, np.newaxis])
+    if not monthly:
+        emis = np.sum(emis, axis=0)
+    
+    fuel_consumption = np.multiply(emis, inverse_BA)
+    if monthly:
+        fuel_consumption = np.sum(fuel_consumption, axis = 0)
     return fuel_consumption
 
     

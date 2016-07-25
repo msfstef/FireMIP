@@ -1,3 +1,9 @@
+"""
+This module is used for temporal analysis of the
+models. For a spatial analysis, use the
+spatial_comparison module.
+"""
+
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
@@ -14,10 +20,18 @@ import globfirm_analysis as globfirm
 import gfed_analysis as gfed
 
 
-def save_data():
-    return False
-
 def plot_present_emissions(pearson=False):
+    """
+    Plots a time series of global carbon emissions for all
+    models from 1997 to 2012, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean. The GFED 4.1s results are also plotted for
+    reference.
+    
+    If argument pearson is set to True, tables with the
+    models' temporal correlations with GFED and the multimodel
+    mean will be printed to the console.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
     gfed_data=[]
@@ -43,7 +57,11 @@ def plot_present_emissions(pearson=False):
         gfed_data.append(gfed.get_global_emissions_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
-    if pearson:        
+    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
+    multimodel_mean = np.mean(multimodel_list, axis=0)
+    multimodel_std = np.std(multimodel_list, axis=0)
+    
+    if pearson:
         jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
         clm_r = stats.pearsonr(gfed_data, clm_data)
         ctem_r = stats.pearsonr(gfed_data, ctem_data)
@@ -51,7 +69,14 @@ def plot_present_emissions(pearson=False):
         orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
         inferno_r = stats.pearsonr(gfed_data, inferno_data)
         
-        print "Table of Pearson's r correlations for Emissions"
+        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
+        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
+        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
+        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
+        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
+        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        
+        print "Table of Emissions correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         print 'JSBACH:', jsbach_r
@@ -60,11 +85,16 @@ def plot_present_emissions(pearson=False):
         print 'LPJ_GUESS_BLAZE:', blaze_r
         print 'ORCHIDEE:', orchidee_r
         print 'INFERNO:', inferno_r
-    
-    
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
-    multimodel_mean = np.mean(multimodel_list, axis=0)
-    multimodel_std = np.std(multimodel_list, axis=0)
+        print '¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬'
+        print "Table of Emissions correlations with Multimodel Mean"
+        print "Model Name || (Pearson's r, p-value)"
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        print 'JSBACH:', jsbach_r2
+        print 'CLM:', clm_r2
+        print 'CTEM:', ctem_r2
+        print 'LPJ_GUESS_BLAZE:', blaze_r2
+        print 'ORCHIDEE:', orchidee_r2
+        print 'INFERNO:', inferno_r2
     
     plt.plot(years, jsbach_data, 'r', label='JSBACH')
     plt.plot(years, clm_data, 'b', label='CLM')
@@ -87,6 +117,17 @@ def plot_present_emissions(pearson=False):
 
 
 def plot_present_burnt_area(pearson=False):
+    """
+    Plots a time series of global total burnt area for all
+    models from 1997 to 2012, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean. The GFED 4.1s results are also plotted for
+    reference.
+    
+    If argument pearson is set to True, tables with the
+    models' temporal correlations with GFED and the multimodel
+    mean will be printed to the console.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
     gfed_data=[]
@@ -112,6 +153,10 @@ def plot_present_burnt_area(pearson=False):
         gfed_data.append(gfed.get_global_BA_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
+    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
+    multimodel_mean = np.mean(multimodel_list, axis=0)
+    multimodel_std = np.std(multimodel_list, axis=0)
+    
     if pearson:
         jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
         clm_r = stats.pearsonr(gfed_data, clm_data)
@@ -120,7 +165,14 @@ def plot_present_burnt_area(pearson=False):
         orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
         inferno_r = stats.pearsonr(gfed_data, inferno_data)
         
-        print "Table of Pearson's r correlations for Burnt Area"
+        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
+        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
+        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
+        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
+        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
+        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        
+        print "Table of BA correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         print 'JSBACH:', jsbach_r
@@ -129,11 +181,16 @@ def plot_present_burnt_area(pearson=False):
         print 'LPJ_GUESS_BLAZE:', blaze_r
         print 'ORCHIDEE:', orchidee_r
         print 'INFERNO:', inferno_r
-    
-    
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
-    multimodel_mean = np.mean(multimodel_list, axis=0)
-    multimodel_std = np.std(multimodel_list, axis=0)
+        print '¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬'
+        print "Table of BA correlations with Multimodel Mean"
+        print "Model Name || (Pearson's r, p-value)"
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        print 'JSBACH:', jsbach_r2
+        print 'CLM:', clm_r2
+        print 'CTEM:', ctem_r2
+        print 'LPJ_GUESS_BLAZE:', blaze_r2
+        print 'ORCHIDEE:', orchidee_r2
+        print 'INFERNO:', inferno_r2
     
     plt.plot(years, np.divide(jsbach_data, 1e12), 'r', label='JSBACH')
     plt.plot(years, np.divide(clm_data, 1e12), 'b', label='CLM')
@@ -158,6 +215,17 @@ def plot_present_burnt_area(pearson=False):
 
 
 def plot_present_fuel_consumption():
+    """
+    This method is deprecated, it is more appropriate to use
+    the preferred plot_present_fuel_consumption_rough function.
+    
+    Plots a time series of mean global fuel consumption (FC),
+    calculated by taking a weighted mean of the FC grid, for all
+    models from 1997 to 2012, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean. The GFED 4.1s results are also plotted for
+    reference.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     gfed_data=[]
@@ -209,6 +277,19 @@ def plot_present_fuel_consumption():
     
     
 def plot_present_fuel_consumption_rough(pearson = False):
+    """
+    Plots a time series of mean global fuel consumption (FC),
+    calculated by dividing total global emissions by total
+    global burnt area over the desired time period, for all
+    models from 1997 to 2012, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean. The GFED 4.1s results are also plotted for
+    reference.
+    
+    If argument pearson is set to True, tables with the
+    models' temporal correlations with GFED and the multimodel
+    mean will be printed to the console.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     gfed_data=[]
@@ -233,8 +314,12 @@ def plot_present_fuel_consumption_rough(pearson = False):
             
         gfed_data.append(gfed.get_global_mean_FC_yearly_rough(i,
                         gfed.data_GFED,gfed.grid_GFED))
-    
-    
+
+
+    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,
+                            blaze_data,orchidee_data, inferno_data])
+    multimodel_mean = np.mean(multimodel_list, axis=0)
+    multimodel_std = np.std(multimodel_list, axis=0)
     
     if pearson:
         jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
@@ -244,7 +329,14 @@ def plot_present_fuel_consumption_rough(pearson = False):
         orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
         inferno_r = stats.pearsonr(gfed_data, inferno_data)
         
-        print "Table of Pearson's r correlations for Fuel Consumption"
+        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
+        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
+        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
+        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
+        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
+        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        
+        print "Table of FC correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         print 'JSBACH:', jsbach_r
@@ -253,11 +345,16 @@ def plot_present_fuel_consumption_rough(pearson = False):
         print 'LPJ_GUESS_BLAZE:', blaze_r
         print 'ORCHIDEE:', orchidee_r
         print 'INFERNO:', inferno_r
-    
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,
-                            blaze_data,orchidee_data, inferno_data])
-    multimodel_mean = np.mean(multimodel_list, axis=0)
-    multimodel_std = np.std(multimodel_list, axis=0)
+        print '¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬'
+        print "Table of FC correlations with Multimodel Mean"
+        print "Model Name || (Pearson's r, p-value)"
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        print 'JSBACH:', jsbach_r2
+        print 'CLM:', clm_r2
+        print 'CTEM:', ctem_r2
+        print 'LPJ_GUESS_BLAZE:', blaze_r2
+        print 'ORCHIDEE:', orchidee_r2
+        print 'INFERNO:', inferno_r2
     
     plt.plot(years, jsbach_data, 'r', label='JSBACH')
     plt.plot(years, clm_data, 'b', label='CLM')
@@ -290,12 +387,25 @@ def plot_present_fuel_consumption_rough(pearson = False):
 #    
 
 def movingaverage(data, period=20):
+    """
+    Simple moving average function, takes arguments
+    data, self explanatory, and period in years over
+    which the averaging is done. The default is 20
+    years, as it is the period of the climatological
+    cycle used in past transient simulations.
+    """
     weights = np.repeat(1.0, period)/period
     ma = np.convolve(data, weights, 'valid')
     return ma
 
 
 def plot_past_emissions():
+    """
+    Plots a time series of global carbon emissions for all
+    models from 1700 to 1996, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     years = range(1700,1997,1)
@@ -354,6 +464,12 @@ def plot_past_emissions():
 
 
 def plot_past_burnt_area():
+    """
+    Plots a time series of global total burnt area for all
+    models from 1700 to 1996, along with a multimodel mean
+    and a shaded region that shows the 1 sigma range from
+    the mean.
+    """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     years = range(1700,1997,1)

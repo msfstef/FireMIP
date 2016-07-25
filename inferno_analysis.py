@@ -147,16 +147,8 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landmask, landC
 # Fuel Consumption Analysis
 #
 
-def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, landmask, landCover_data):
+def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, landmask, landCover_data, monthly=False):
     time = int(year_start*12)
-    sec_per_month = []
-    for i in range(month_period):
-        if time+i == 0:
-            sec_per_month.append(emis_data["time"][0])
-        else:
-            sec_per_month.append(emis_data["time"][time+i]-emis_data["time"][time+i-1])
-  
-    sec_per_month= np.array(sec_per_month)
     
     # Ignore division by zero warning. Returns NaN.
     np.seterr(divide='ignore')
@@ -165,22 +157,26 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     landmask = np.array(landmask["lsm"])
     landmask[landmask > 1.] = 0
     
-    actual_landCover_data = np.multiply(landCover_data["LandCoverFrac"][time:time+month_period, :9],landmask)                                             
-    actual_emission_data= np.multiply(actual_landCover_data, emis_data["fFirepft"][time:time+month_period])
+    actual_landCover_data = np.multiply(landCover_data["LandCoverFrac"][time:time+month_period, :9],landmask)
+    emis = np.multiply(actual_landCover_data, emis_data["fFirepft"][time:time+month_period])
+    emis = np.sum(emis,axis=1)
+    if not monthly:
+        emis = np.sum(emis,axis=0)
     
-    # Possibly convert to decimals and multiply by landCover (?)
     BA = BA_data["burntArea"][time:time+month_period]
     BA[BA<0.]=0
-    actual_BA = np.multiply(BA, actual_landCover_data) 
-    
-    actual_BA = np.sum(actual_BA, axis=1)
-    inverse_BA = 1./actual_BA
+    BA = np.multiply(BA, actual_landCover_data)
+    BA = np.sum(BA,axis=1)
+    if not monthly:
+        BA = np.sum(BA,axis=0)
+
+    inverse_BA = 1./BA
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
-    actual_emission_data = np.sum(actual_emission_data, axis = 1)
-    FC_per_month = np.multiply(actual_emission_data, inverse_BA)
-
-    fuel_consumption = np.sum(FC_per_month, axis = 0)
+    
+    fuel_consumption = np.multiply(emis, inverse_BA)
+    if monthly:
+        fuel_consumption = np.sum(fuel_consumption, axis = 0)
     return fuel_consumption
     
     

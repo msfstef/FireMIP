@@ -138,7 +138,7 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data,
 # Fuel Consumption Analysis
 #
 
-def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, landCover_data, time_data):
+def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, landCover_data, time_data, monthly=False):
     time = int(year_start*12)
     days_per_month = []
     if (time+12) == len(time_data["time"]):
@@ -171,17 +171,22 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     BA[BA>10**10] = 0
     # Assume fractional, add up pft dependency.
     BA = np.sum(BA, axis=1)
+    if not monthly:
+        BA=np.sum(BA,axis=0)
+    
     inverse_BA = 1./BA
 
     
-    actual_emission_data= np.multiply(landCover, emis_data["fFirepft"][time:time+month_period])
+    emis= np.multiply(landCover, emis_data["fFirepft"][time:time+month_period])
     # Add up pft dependency.
-    actual_emission_data = np.sum(actual_emission_data, axis=1)
+    emis = np.sum(emis, axis=1)
+    emis = np.multiply(emis,sec_per_month[:, np.newaxis, np.newaxis])
+    if not monthly:
+        emis = np.sum(emis, axis=0)
     
-    FC_data = np.multiply(actual_emission_data, inverse_BA)  
-    FC_per_month = np.multiply(FC_data, 
-                sec_per_month[:, np.newaxis, np.newaxis])
-    fuel_consumption = np.sum(FC_per_month, axis = 0)
+    fuel_consumption = np.multiply(emis, inverse_BA)  
+    if monthly:
+        fuel_consumption = np.sum(fuel_consumption, axis = 0)
     return fuel_consumption
 
     
