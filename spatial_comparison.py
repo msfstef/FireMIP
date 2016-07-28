@@ -511,7 +511,7 @@ def plot_map(year, year_period, model, var='FC',
 
 
 def plot_spatial_histogram(year, year_period, model, 
-                var='FC', region=0, reg_type='boxes'):
+                var='FC', region=0, reg_type='boxes', save=False):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -570,18 +570,23 @@ def plot_spatial_histogram(year, year_period, model,
     flat_grid = grid[grid > 0]
     if var!='FC':
         flat_grid = np.divide(flat_grid, year_period)
-    plt.hist(flat_grid, 50, normed=1, facecolor='blue', alpha=0.75)
+    fig = plt.figure()
+    plt.hist(flat_grid, 50, normed=False,
+                facecolor='blue', alpha=0.75)
     
     plt.xlabel(title + ' ' + units)
-    plt.ylabel('Frequency in \%')
+    plt.ylabel('No. of Grid Cells')
     plt.title('Spatial Histogram of '+title+' for '+str(year)+
-            '-'+str(year+year_period)+', '+region_names[region]+', '+model)
-
-    plt.show()
+              '-'+str(year+year_period)+', '
+              +region_names[region]+', '+model)
+    if save:
+        return fig
+    else:
+        plt.show()
 
 
 def plot_multimodel_box(year, year_period, var='FC', 
-                region=0, reg_type='boxes', model='all'):
+             region=0, reg_type='boxes', model='all', save=False):
     """
     Year is given in absolute terms, e.g. 1997.
     
@@ -652,17 +657,21 @@ def plot_multimodel_box(year, year_period, var='FC',
         # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned per Year)'
    
+    fig = plt.figure()
     plt.boxplot(data, showmeans=True, whis=[5,95], sym='', 
                 labels = x_labels)
     plt.ylabel(title +' '+ units)
     plt.title('Box plot of '+title+' for '+str(year)+
             '-'+str(year+year_period)+', '+title_end)
-    plt.show()
+    if save:
+        return fig
+    else:
+        plt.show()
 
 
-#plot_map(1997,15,'inferno', 'FC', binned=True)
-#plot_multimodel_box(1997,15,'FC', model='blaze')
-#plot_spatial_histogram(1997, 15, 'inferno')
+#plot_map(1997,15,'ctem', 'FC', binned=True)
+#plot_multimodel_box(1997,15,'FC')
+#plot_spatial_histogram(1997, 15, 'ctem', var='FC')
 
 
 #
@@ -670,7 +679,15 @@ def plot_multimodel_box(year, year_period, var='FC',
 #
 
 
-def interp_GFED_func(lons, lats, var, year, year_period):
+def interp_GFED_func(lons, lats, var, year, year_period, method):
+    """
+    Interplates the GFED map for a given variable for a given
+    year and year period using the given interploation method
+    to the desired grid, determined by the lons and lats arguments.
+    
+    Used in interp_GFED_grid, see its associated docstring for
+    more information on the use of the function.
+    """
     GFED_data = load_var_grid(year,year_period,'gfed',var)
     
     
@@ -679,24 +696,34 @@ def interp_GFED_func(lons, lats, var, year, year_period):
     lons_gfed, lats_gfed = np.meshgrid(lons_gfed, lats_gfed)
     
     new_grid = intrplt.griddata((lons_gfed.ravel(),lats_gfed.ravel()), 
-                  GFED_data.ravel(), (lons,lats), method='nearest')
+                  GFED_data.ravel(), (lons,lats), method=method)
     return new_grid
 
 
-def interp_GFED_grid(year, year_period, model, var='FC', plot=False):
+def interp_GFED_grid(year, year_period, model, var='FC',
+                    method='nearest', plot=False):
     """
+    Returns the GFED grid for a given variable for a given year
+    and year period, interpolated to the desired model's grid.
+    
+    Year is in absolute terms, e.g. 1997.
+    
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
     'inferno'
-        
-    Argument reg_type can be set to either 'gfed' or 'boxes' to
-    generate the interpolated GFED regions or boxed latlon regions
-    respectively. The boxed latlon regions are the preferred method
-    and are the default.
     
-    Argument plot can be set to True to show regions on map.
+    Argument var can take values 'FC', 'emis', 'BA', to get the
+    grid for fuel consumption, burnt area, or emissions respectively.
+    
+    Argument method determines the interpolation method, and can
+    take values 'nearest', 'linear', or 'cubic' for the associated
+    interpolation methods (self explanatory. Default is set to 
+    nearest neighbour, as it is the fastest and simplest, without
+    too much loss in accuracy.
+    
+    Argument plot can be set to True to show map of interpolated
+    data, useful for checks.
     """
-    no_interp = False
     if model=='gfed':
         lats = np.arange(-89.875, 90.,0.25)
         lons = np.arange(-179.875, 180.,0.25)
@@ -730,7 +757,8 @@ def interp_GFED_grid(year, year_period, model, var='FC', plot=False):
       
     lons, lats = np.meshgrid(lons, lats)
     
-    new_grid = interp_GFED_func(lons,lats,var,year,year_period)
+    new_grid = interp_GFED_func(lons,lats,var,year,
+                                year_period,method)
 
     if plot:
         fig=plt.figure()
@@ -747,6 +775,14 @@ def interp_GFED_grid(year, year_period, model, var='FC', plot=False):
         return new_grid
 
 def calc_spatial_correlation(year, year_period, model, var):
+    """
+    Calculates the Pearson correlation between a model and
+    GFED for a given variable for a given year and year period.
+    
+    Function is used in get_spacial_correlations to get table
+    of correlations for all models. See its associated docstring
+    for more information.
+    """
     GFED_grid = interp_GFED_grid(year,year_period,model,var)
     model_grid = load_var_grid(year,year_period,model,var)
     
@@ -758,6 +794,20 @@ def calc_spatial_correlation(year, year_period, model, var):
     
     
 def get_spatial_correlations(year, year_period, var):
+    """
+    Calculates and returns a table of Pearson correlations
+    of the given variable var (which takes values 'FC', 'emis',
+    and 'BA' for fuel consumption, emissions, and burnt area
+    respectively) for a given year and year period of all the
+    models' maps for that period with GFED's map.
+    
+    The correlation is calculated by interpolating the GFED
+    variable map to each individual model's grid and then
+    flattening both grids and calculating their Pearson
+    correlation. Should give a measure of the spatial
+    accuracy of the models using GFED as the performance
+    metric/observations.
+    """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno']
     pearson_list = []
@@ -769,12 +819,34 @@ def get_spatial_correlations(year, year_period, var):
             str(year)+'-'+str(year+year_period))
     print('===========================================')
     for i in range(len(pearson_list)):
-        print(model_list[i+1]+': ', pearson_list[i])
+        print(model_list[i+1]+': '+str(pearson_list[i]))
     return pearson_list
 
 
-def plot_diff_map(year, year_period, model, var, binned=True):
-    GFED_grid = interp_GFED_grid(year,year_period,model,var)
+def plot_diff_map(year, year_period, model, var, 
+                    binned=True, save=False):
+    """
+    Plots a map of the relative difference of the given model
+    with GFED for a given variable.
+    
+    Year is in absolute terms, e.g. 1997.
+    
+    Takes argument model, which is a string that can be one of the
+    following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
+    'inferno'
+    
+    Also takes argument var, which is a string that can take either
+    'FC', 'BA', or 'emis' as an input, which will return the
+    difference map for fuel consumption, burnt area, or emissions
+    respectively.
+    
+    Argument binned is set by default to true. If set to false,
+    it will arrange the colorbar and colormap automatically.
+    It is suggested that bins are used for standardised maps
+    and easier comparison.
+    """
+    GFED_grid = interp_GFED_grid(year,year_period,model,var,
+                                 method='linear')
     GFED_grid = np.array(GFED_grid)
     model_grid = load_var_grid(year,year_period,model,var)
     model_grid = np.array(model_grid)
@@ -783,25 +855,25 @@ def plot_diff_map(year, year_period, model, var, binned=True):
     diff_grid = np.multiply(diff_grid, 100)
     
     if binned:
-            ticks=['<-200',-150,-100,-50,0,50,100,150,'>200']
-            bounds=[-200,-150,-100,-50,0,50,100,150,200]
+            ticks=[-100,-50,0,50,100,150,200,300,'>500']
+            bounds=[-120,-60,0,20,40,60,80,100,120]
             for index,value in np.ndenumerate(diff_grid):
                 bin = 'nan'
-                if value<-150:
+                if -100<=value<-50:
                     bin = bounds[0]
-                elif -150<=value<-100:
-                    bin = bounds[1]
-                elif -100<=value<-50:
-                    bin = bounds[2]
                 elif -50<=value<0:
-                    bin = bounds[3]
+                    bin = bounds[1]
                 elif 0<=value<50:
-                    bin = bounds[4]
+                    bin = bounds[2]
                 elif 50<=value<100:
-                    bin = bounds[5]
+                    bin = bounds[3]
                 elif 100<=value<150:
+                    bin = bounds[4]
+                elif 150<=value<200:
+                    bin = bounds[5]
+                elif 200<=value<300:
                     bin = bounds[6]
-                elif 150<=value:
+                elif 300<=value:
                     bin = bounds[7]
                 if bin != 'nan':    
                     diff_grid[index] = bin
@@ -813,7 +885,8 @@ def plot_diff_map(year, year_period, model, var, binned=True):
     m.drawparallels(np.arange(-90.,91.,30.))
     m.drawmeridians(np.arange(-180.,181.,60.))
     m.drawmapboundary(fill_color='white')
-    cs=m.imshow(diff_grid,  interpolation='none')
+    cs=m.imshow(diff_grid,  interpolation='none',
+                cmap=plt.cm.coolwarm)
     plt.title("Relative Difference in "+var+
                 ", GFED vs "+ model)
     if binned:
@@ -822,10 +895,155 @@ def plot_diff_map(year, year_period, model, var, binned=True):
     else:
         cb=m.colorbar(cs, "bottom")
     cb.set_label('Relative Difference (%)')
-    plt.show()
+    if save:
+        return fig
+    else:
+        plt.show()
+
+
+def interp_std_func(model, var, year, year_period, 
+                    method, ref_grid):
+    """
+    Interplates the GFED map for a given variable for a given
+    year and year period using the given interploation method
+    to the desired grid, determined by the lons and lats arguments.
     
+    Used in interp_GFED_grid, see its associated docstring for
+    more information on the use of the function.
+    """
+    model_data = load_var_grid(year,year_period,model,var)
+    if model=='gfed':
+        lats = np.arange(-89.875, 90.,0.25)
+        lons = np.arange(-179.875, 180.,0.25)
+    elif model=='jsbach':
+        lats = jsbach.grid_JSBACH["latitude"]
+        lats = np.array(lats)
+        lats = lats[::-1]
+        lons = jsbach.grid_JSBACH["longitude"]
+        lons = np.array(lons) - np.max(lons)/2.
+    elif model=='clm':
+        lats = clm.grid_CLM["lat"]
+        lons = clm.grid_CLM["lon"]
+        lons = np.array(lons) - np.max(lons)/2.
+        
+    elif model=='ctem':
+        lats = ctem.grid_CTEM["lat"]
+        lons = ctem.grid_CTEM["lon"]
+        lons = np.array(lons) - np.max(lons)/2.
+    elif model=='blaze':
+        lats = blaze.grid_BLAZE["lat"]
+        lons = blaze.grid_BLAZE["lon"]
+    elif model=='orchidee':
+        lats = orchidee.grid_ORCHIDEE["latitude"]
+        lats = np.array(lats)
+        lats = lats[::-1]
+        lons = orchidee.grid_ORCHIDEE["longitude"]
+    elif model=='inferno':
+        lats = inferno.grid_INFERNO["latitude"]
+        lons = inferno.grid_INFERNO["longitude"]  
+        lons = np.array(lons) - np.max(lons)/2.
+      
+    lons, lats = np.meshgrid(lons, lats)
+    
+    if ref_grid=='ctem':
+        lats_ref = ctem.grid_CTEM["lat"]
+        lons_ref = ctem.grid_CTEM["lon"]
+        lons_ref = np.array(lons_ref) - np.max(lons_ref)/2.
+    
+    if ref_grid=='gfed':
+        lats_ref = np.arange(-89.875, 90.,0.25)
+        lons_ref = np.arange(-179.875, 180.,0.25)
+    
+    lons_ref, lats_ref = np.meshgrid(lons_ref, lats_ref)
+    
+    new_grid = intrplt.griddata((lons.ravel(),lats.ravel()), 
+                  model_data.ravel(), (lons_ref,lats_ref), method=method)
+    return new_grid
+    
+    
+def plot_std_map(year, year_period, var='FC', method='nearest',
+                 ref_grid='gfed', binned='True'):
+    model_list = ['jsbach', 'clm', 'blaze', 
+                    'orchidee', 'inferno','ctem']
+    grid_list = []
+    if ref_grid=='gfed':
+        print 'Using GFED resolution.'
+    if ref_grid=='ctem':
+        print 'Using CTEM resolution.'
+        model_list=model_list[:-1]
+        model_grid = load_var_grid(year,year_period,'ctem',var)
+        model_grid = np.array(model_grid)
+        grid_list.append(model_grid)
+    
+    for model in model_list:
+        model_grid=interp_std_func(model, var, year, year_period, 
+                                      method, ref_grid)
+        model_grid = np.array(model_grid)
+        grid_list.append(model_grid)
+        
+    grid_list = np.array(grid_list)
+    std_grid = np.std(grid_list, axis=0)
+    std_grid[std_grid==0]=np.nan
+
+    
+    
+    if var == 'FC':
+        title = 'Fuel Consumption'
+        units = '($kg\, C\, m^{-2}\, burned$)'
+        if binned:
+            ticks=[0,0.1,0.5,1,2,3,4,5,10,'>20.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(std_grid):
+                bin = 'nan'
+                if 0.<value<0.1:
+                    bin = 0
+                elif 0.1<=value<0.5:
+                    bin = 1
+                elif 0.5<=value<1:
+                    bin = 2
+                elif 1<=value<2:
+                    bin = 3
+                elif 2<=value<3:
+                    bin = 4
+                elif 3<=value<4:
+                    bin = 5
+                elif 4<=value<5:
+                    bin = 6
+                elif 5<=value<10:
+                    bin = 7
+                elif 10<=value:
+                    bin = 8
+                if bin != 'nan':    
+                    std_grid[index] = bin
+    elif var == 'emis':
+        title = 'Carbon Emissions'
+        units = '($kg\, C\, m^{-2} \, year^{-1}$)'
+    elif var == 'BA':
+        title = 'Burnt Area'
+        # Due to recurring fires in <year, not normalised.
+        units = '(Fraction Burned per Year)'
+    
+    fig=plt.figure()
+    m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
+        urcrnrlon=180,urcrnrlat=90)
+    m.drawcoastlines()
+    m.drawparallels(np.arange(-90.,91.,30.))
+    m.drawmeridians(np.arange(-180.,181.,60.))
+    m.drawmapboundary(fill_color='white')
+    cs=m.imshow(std_grid,  interpolation='none')
+    plt.title("Multimodel Standard Deviations for "+title+
+                ", "+str(year)+'-'+str(year+year_period))
+    if binned:
+        cb=m.colorbar(cs, "bottom", boundaries=bounds)
+        cb.ax.set_xticklabels(ticks)
+    else:
+        cb=m.colorbar(cs, "bottom")
+    cb.set_label('Standard Deviation '+units)
+    plt.show()
+        
 
 
 #get_spatial_correlations(1997,15,'FC')
 #plot_diff_map(1997,15,'clm','FC')
+#plot_std_map(1997,15,ref_grid='ctem')
 
