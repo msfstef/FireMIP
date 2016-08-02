@@ -11,17 +11,15 @@ grid_CTEM = Dataset('../../model_data/CTEM-gridarea.nc',
                     'r', format = 'NETCDF4')
 landCover_CTEM = Dataset('../../model_data/CTEM_S1_landCoverFrac.nc',
                     'r', format = 'NETCDF4')
-
                                
-
-
 #
 # Burnt Area Analysis
 #
 
 def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
     BA = BA_data["burntArea"][year*12:year*12+month_period, :9]
-    BA[BA>100.]=0
+    BA = np.array(BA)
+    BA[BA>1e30]=0
     BA[BA<0.]=0
     BA = np.divide(BA,100)
     BA = np.multiply(BA, landCover_data["landCoverFrac"][year*12:year*12+month_period])
@@ -30,6 +28,7 @@ def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
+
     
 def get_global_BA_yearly(year, BA_data, grid_data, landCover_data):
     BA_grid = get_grid_burnt_area(year, 12, BA_data, grid_data,landCover_data)
@@ -59,7 +58,6 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data, landCover_data):
     
 #plot_global_BA_yearly(16,BA_CTEM, grid_CTEM, landCover_CTEM)
 #print get_global_BA_yearly(136, BA_CTEM, grid_CTEM, landCover_CTEM)
-
 
 #
 # Carbon Emissions Analysis
@@ -116,7 +114,7 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data)
     
 
 #plot_global_emissions_yearly(16,emis_CTEM,grid_CTEM,landCover_CTEM)
-#print get_global_emissions_yearly(151,emis_CTEM,grid_CTEM, landCover_CTEM)
+#print get_global_emissions_yearly(150,emis_CTEM,grid_CTEM, landCover_CTEM)
 
 
 
@@ -144,12 +142,14 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     np.seterr(over='ignore')
     
     landCover = landCover_data["landCoverFrac"][time:time+month_period]
+    landCover = np.array(landCover)
+    landCover[landCover>1.]=0
     
     # Convert from percentage to decimal and eliminate meaningless values.
-    BA = np.divide(BA_data["burntArea"][time:time+month_period, :9], 100)
-    BA=np.array(BA)
-    BA[BA<0.] = 0.
-    #BA[BA>1.] = 0.
+    BA = BA_data["burntArea"][time:time+month_period, :9]
+    BA=np.divide(np.array(BA), 100.)
+    BA[BA<0] = 0.
+    BA[BA==1e36] = 0.
     
     BA = np.multiply(landCover, BA)
 
@@ -158,6 +158,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     
     if not monthly:
         BA = np.sum(BA,axis=0)
+    
     inverse_BA = 1./BA
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0.
@@ -174,6 +175,9 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     fuel_consumption = np.multiply(emis, inverse_BA)  
     if monthly:
         fuel_consumption = np.sum(fuel_consumption, axis = 0)
+    # Removing these values as they seem singularities.
+    # Must ask modeller what is wrong.
+    fuel_consumption[fuel_consumption>20]=0
     return fuel_consumption
 
     

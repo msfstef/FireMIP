@@ -2,20 +2,16 @@ from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
-                    
-emis_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_fFirepft.nc', 
-                'r', format = 'NETCDF4')
-BA_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_burntArea.nc', 
-                'r', format = 'NETCDF4')                
-landCover_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_landCoverFrac.nc', 
-                'r', format = 'NETCDF4')                 
-grid_GLOBFIRM = Dataset('../../model_data/HalfDegree-gridarea-8975.nc', 
-                    'r', format = 'NETCDF4')
+
+emis_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_fFirepft.nc','r', format = 'NETCDF4')
+BA_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_burntArea.nc', 'r', format = 'NETCDF4')               
+landCover_GLOBFIRM = Dataset('../../model_data/LPJ-GUESS-globfirm_SF1_landCoverFrac.nc', 'r', format = 'NETCDF4')               
+grid_GLOBFIRM = Dataset('../../model_data/HalfDegree-gridarea-8975.nc',
+                        'r', format = 'NETCDF4')
 
 #
 # Fuel Consumption Analysis
 #
-
 
 def get_grid_fuel_consumption(year_start, year_period, emis_data, BA_data):
     adjusted_year = year_start + 250
@@ -104,7 +100,6 @@ def plot_FC_map_period(year_start, year_period, emis_data, BA_data):
 #
 # Carbon Emissions Analysis
 #
-
                    
 def get_grid_emissions(year_start, year_period, emis_data, grid_data, landCover_data):
     adjusted_year = year_start + 250
@@ -147,27 +142,58 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data)
 
 def plot_map_period(year_start, year_period, emis_data, grid_data, landCover_data):
     map_data = get_grid_emissions(year_start,year_period, emis_data, grid_data, landCover_data)
-    # Convert to billions of kg.
-    map_data = np.multiply(map_data, (1./(10**9)))
+    map_data = np.divide(map_data, year_period)
+    map_data[map_data==0]=np.nan
     
     lats = grid_data["latitude"]
     lons = grid_data["longitude"]
-    emis_data = map_data
     lons, lats = np.meshgrid(lons, lats)
 
+    binned=True
+    if binned:
+            map_data=np.divide(map_data,grid_data["cell_area"])
+            ticks=[0.,.005,.01,.02,.05,.1,.2,.5,1.,'>5.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(map_data):
+                bin = 'nan'
+                if 0.<value<0.005:
+                    bin = 0
+                elif 0.005<=value<0.01:
+                    bin = 1
+                elif 0.01<=value<0.02:
+                    bin = 2
+                elif 0.02<=value<0.05:
+                    bin = 3
+                elif 0.05<=value<0.1:
+                    bin = 4
+                elif 0.1<=value<0.2:
+                    bin = 5
+                elif 0.2<=value<0.5:
+                    bin = 6
+                elif 0.5<=value<1.:
+                    bin = 7
+                elif 1.<=value:
+                    bin = 8
+                if bin != 'nan':    
+                    map_data[index] = bin
+    
     fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-60, urcrnrlon=180,urcrnrlat=80,projection='mill')
+    m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
+    urcrnrlon=180,urcrnrlat=90)
     m.drawcoastlines()
     m.drawparallels(np.arange(-90.,91.,30.))
     m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='aqua')
-    cs = m.contourf(lons,lats, emis_data, 100, cmap=plt.cm.YlOrRd, latlon=True)
-    cb = m.colorbar(cs, "bottom", size="5%", pad="2%")
-    cb.set_label("Billions of kg of Carbon")
-    plt.title("Total Emissions, LPJ GlobFIRM")
+    m.drawmapboundary(fill_color='white')
+    cs=m.imshow(map_data, interpolation='none')
+    if binned:
+        cb=m.colorbar(cs, "bottom", boundaries=bounds)
+        cb.ax.set_xticklabels(ticks)
+    else:
+        cb=m.colorbar(cs, "bottom")
+    cb.set_label("kg C per m^2")
+    plt.title("Total Emissions 1997-2012, GlobFIRM")
     plt.show()
-    
-#plot_map_period(60,1,emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)    
-#plot_global_emissions_yearly(20, emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)
-#print get_global_emissions_yearly(53, emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)
 
+#plot_map_period(47,15,emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)    
+#plot_global_emissions_yearly(20, emis_GLOBFIRM, grid_GLOBFIRM, landCover_GLOBFIRM)
+#print get_global_emissions_yearly(60,emis_GLOBFIRM,grid_GLOBFIRM, landCover_GLOBFIRM)

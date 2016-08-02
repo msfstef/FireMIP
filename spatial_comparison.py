@@ -80,30 +80,20 @@ def interp_regions(lons, lats, var='none'):
     return regions
 
 
-def generate_regions(model='gfed', reg_type='boxes', plot=False):
+def get_lons_lats(model):
     """
-    Takes argument model, which is a string that can be one of the
-    following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
-        
-    Argument reg_type can be set to either 'gfed' or 'boxes' to
-    generate the interpolated GFED regions or boxed latlon regions
-    respectively. The boxed latlon regions are the preferred method
-    and are the default.
-    
-    Argument plot can be set to True to show regions on map.
+    Takes model string as argument and returns the
+    desired model's longitude and latitude array
+    for use in interpolation.
     """
-    no_interp = False
     if model=='gfed':
         lats = np.arange(-89.875, 90.,0.25)
         lons = np.arange(-179.875, 180.,0.25)
-        if reg_type=='gfed':
-            no_interp = True
     elif model=='jsbach':
         lats = jsbach.grid_JSBACH["latitude"]
+        lons = jsbach.grid_JSBACH["longitude"]
         lats = np.array(lats)
         lats = lats[::-1]
-        lons = jsbach.grid_JSBACH["longitude"]
         lons = np.array(lons) - np.max(lons)/2.
     elif model=='clm':
         lats = clm.grid_CLM["lat"]
@@ -126,6 +116,27 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
         lats = inferno.grid_INFERNO["latitude"]
         lons = inferno.grid_INFERNO["longitude"]  
         lons = np.array(lons) - np.max(lons)/2.
+    return lons, lats
+
+
+def generate_regions(model='gfed', reg_type='boxes', plot=False):
+    """
+    Takes argument model, which is a string that can be one of the
+    following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
+    'inferno'
+        
+    Argument reg_type can be set to either 'gfed' or 'boxes' to
+    generate the interpolated GFED regions or boxed latlon regions
+    respectively. The boxed latlon regions are the preferred method
+    and are the default.
+    
+    Argument plot can be set to True to show regions on map.
+    """
+    no_interp = False
+    if reg_type=='gfed' and model=='gfed':
+        no_interp = True
+    else:
+        lons, lats = get_lons_lats(model)
       
     lons, lats = np.meshgrid(lons, lats)
     
@@ -669,8 +680,8 @@ def plot_multimodel_box(year, year_period, var='FC',
         plt.show()
 
 
-#plot_map(1997,15,'ctem', 'FC', binned=True)
-#plot_multimodel_box(1997,15,'FC')
+#plot_map(1997,15,'inferno', 'FC', binned=True)
+#plot_multimodel_box(1997,15,'FC',model='ctem')
 #plot_spatial_histogram(1997, 15, 'ctem', var='FC')
 
 
@@ -912,36 +923,7 @@ def interp_std_func(model, var, year, year_period,
     more information on the use of the function.
     """
     model_data = load_var_grid(year,year_period,model,var)
-    if model=='gfed':
-        lats = np.arange(-89.875, 90.,0.25)
-        lons = np.arange(-179.875, 180.,0.25)
-    elif model=='jsbach':
-        lats = jsbach.grid_JSBACH["latitude"]
-        lats = np.array(lats)
-        lats = lats[::-1]
-        lons = jsbach.grid_JSBACH["longitude"]
-        lons = np.array(lons) - np.max(lons)/2.
-    elif model=='clm':
-        lats = clm.grid_CLM["lat"]
-        lons = clm.grid_CLM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
-        
-    elif model=='ctem':
-        lats = ctem.grid_CTEM["lat"]
-        lons = ctem.grid_CTEM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
-    elif model=='blaze':
-        lats = blaze.grid_BLAZE["lat"]
-        lons = blaze.grid_BLAZE["lon"]
-    elif model=='orchidee':
-        lats = orchidee.grid_ORCHIDEE["latitude"]
-        lats = np.array(lats)
-        lats = lats[::-1]
-        lons = orchidee.grid_ORCHIDEE["longitude"]
-    elif model=='inferno':
-        lats = inferno.grid_INFERNO["latitude"]
-        lons = inferno.grid_INFERNO["longitude"]  
-        lons = np.array(lons) - np.max(lons)/2.
+    lons, lats = get_lons_lats(model)
       
     lons, lats = np.meshgrid(lons, lats)
     
@@ -1040,7 +1022,7 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
         cb=m.colorbar(cs, "bottom")
     cb.set_label('Standard Deviation '+units)
     plt.show()
-        
+
 
 
 #get_spatial_correlations(1997,15,'FC')
