@@ -19,7 +19,7 @@ landCover_CTEM = Dataset('../../model_data/CTEM_S1_landCoverFrac.nc',
 def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
     BA = BA_data["burntArea"][year*12:year*12+month_period, :9]
     BA = np.array(BA)
-    BA[BA>1e30]=0
+    BA[BA>100]=0
     BA[BA<0.]=0
     BA = np.divide(BA,100)
     BA = np.multiply(BA, landCover_data["landCoverFrac"][year*12:year*12+month_period])
@@ -148,8 +148,8 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
     # Convert from percentage to decimal and eliminate meaningless values.
     BA = BA_data["burntArea"][time:time+month_period, :9]
     BA=np.divide(np.array(BA), 100.)
-    BA[BA<0] = 0.
-    BA[BA==1e36] = 0.
+    BA[BA<0.] = 0.
+    BA[BA>1.] = 0.
     
     BA = np.multiply(landCover, BA)
 
@@ -177,7 +177,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
         fuel_consumption = np.sum(fuel_consumption, axis = 0)
     # Removing these values as they seem singularities.
     # Must ask modeller what is wrong.
-    fuel_consumption[fuel_consumption>20]=0
+    fuel_consumption[fuel_consumption>100]=0
     return fuel_consumption
 
     

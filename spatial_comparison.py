@@ -80,44 +80,73 @@ def interp_regions(lons, lats, var='none'):
     return regions
 
 
-def get_lons_lats(model):
+def get_lons_lats(model, standard=True):
     """
     Takes model string as argument and returns the
     desired model's longitude and latitude array
     for use in interpolation.
+    
+    If standard is set to False, it returns the original
+    format of the latitudes and longitudes, as well
+    as the shift that would have been given to the
+    standardised format. Used only for tests and 
+    checks.
     """
     if model=='gfed':
         lats = np.arange(-89.875, 90.,0.25)
         lons = np.arange(-179.875, 180.,0.25)
+        lon_shift = 0.
     elif model=='jsbach':
         lats = jsbach.grid_JSBACH["latitude"]
         lons = jsbach.grid_JSBACH["longitude"]
         lats = np.array(lats)
-        lats = lats[::-1]
-        lons = np.array(lons) - np.max(lons)/2.
+        lons = np.array(lons)
+        lon_shift = np.max(lons)/2.
+        if standard:
+            lats = lats[::-1]
+            lons = lons - lon_shift
     elif model=='clm':
         lats = clm.grid_CLM["lat"]
         lons = clm.grid_CLM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
-        
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = np.max(lons)/2.
+        if standard:
+            lons = lons - lon_shift
     elif model=='ctem':
         lats = ctem.grid_CTEM["lat"]
         lons = ctem.grid_CTEM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = np.max(lons)/2.
+        if standard:
+            lons = lons - lon_shift
     elif model=='blaze':
         lats = blaze.grid_BLAZE["lat"]
         lons = blaze.grid_BLAZE["lon"]
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = 0.
     elif model=='orchidee':
         lats = orchidee.grid_ORCHIDEE["latitude"]
-        lats = np.array(lats)
-        lats = lats[::-1]
         lons = orchidee.grid_ORCHIDEE["longitude"]
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = 0.
+        if standard:
+            lats = lats[::-1]
     elif model=='inferno':
         lats = inferno.grid_INFERNO["latitude"]
         lons = inferno.grid_INFERNO["longitude"]  
-        lons = np.array(lons) - np.max(lons)/2.
-    return lons, lats
-
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = np.max(lons)/2.
+        if standard:
+            lons = lons - lon_shift
+    if standard:
+        return lons, lats
+    else:
+        return lons, lats, lon_shift
 
 def generate_regions(model='gfed', reg_type='boxes', plot=False):
     """
@@ -163,8 +192,11 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
 
 
 def get_regional_var_grid(year, year_period, region, model, 
-                            var, reg_type, per_area=True):
-    full_grid = load_var_grid(year,year_period,model,var,per_area)
+                       var, reg_type='boxes', grid=False):
+    if type(grid) is bool:
+        full_grid = load_var_grid(year,year_period,model,var)
+    else:
+        full_grid = grid
     region_data = generate_regions(model, reg_type)
     
     # Set desired region to 1 and every other region to 0.
@@ -396,7 +428,7 @@ def plot_map(year, year_period, model, var='FC',
     """
     if reg_type=='boxes':
         region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
-                        'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
+                    'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
     elif reg_type=='gfed':
         region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
                         'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
@@ -680,8 +712,8 @@ def plot_multimodel_box(year, year_period, var='FC',
         plt.show()
 
 
-#plot_map(1997,15,'inferno', 'FC', binned=True)
-#plot_multimodel_box(1997,15,'FC',model='ctem')
+#plot_map(1997,1,'orchidee', 'BA', binned=True)
+#plot_multimodel_box(1997,15,'FC')
 #plot_spatial_histogram(1997, 15, 'ctem', var='FC')
 
 
@@ -735,36 +767,7 @@ def interp_GFED_grid(year, year_period, model, var='FC',
     Argument plot can be set to True to show map of interpolated
     data, useful for checks.
     """
-    if model=='gfed':
-        lats = np.arange(-89.875, 90.,0.25)
-        lons = np.arange(-179.875, 180.,0.25)
-    elif model=='jsbach':
-        lats = jsbach.grid_JSBACH["latitude"]
-        lats = np.array(lats)
-        lats = lats[::-1]
-        lons = jsbach.grid_JSBACH["longitude"]
-        lons = np.array(lons) - np.max(lons)/2.
-    elif model=='clm':
-        lats = clm.grid_CLM["lat"]
-        lons = clm.grid_CLM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
-        
-    elif model=='ctem':
-        lats = ctem.grid_CTEM["lat"]
-        lons = ctem.grid_CTEM["lon"]
-        lons = np.array(lons) - np.max(lons)/2.
-    elif model=='blaze':
-        lats = blaze.grid_BLAZE["lat"]
-        lons = blaze.grid_BLAZE["lon"]
-    elif model=='orchidee':
-        lats = orchidee.grid_ORCHIDEE["latitude"]
-        lats = np.array(lats)
-        lats = lats[::-1]
-        lons = orchidee.grid_ORCHIDEE["longitude"]
-    elif model=='inferno':
-        lats = inferno.grid_INFERNO["latitude"]
-        lons = inferno.grid_INFERNO["longitude"]  
-        lons = np.array(lons) - np.max(lons)/2.
+    lons, lats = get_lons,lats(model)
       
     lons, lats = np.meshgrid(lons, lats)
     
