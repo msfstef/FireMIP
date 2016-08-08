@@ -31,6 +31,9 @@ def plot_present_emissions(table=True, pearson=False):
     models' temporal correlations with GFED and the multimodel
     mean will be printed to the console.
     """
+    model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno']
+    model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
     gfed_data=[]
@@ -56,82 +59,71 @@ def plot_present_emissions(table=True, pearson=False):
         gfed_data.append(gfed.get_global_emissions_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
+    data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
+            blaze_data,orchidee_data,inferno_data]
+    
+    multimodel_list = np.array(data_list[1:])
     multimodel_mean = np.mean(multimodel_list, axis=0)
     multimodel_std = np.std(multimodel_list, axis=0)
     
     if table:
+        print "\n \n"
         print "Table of Mean Emissions"
         print "Model Name || (mean,stdev in Pg C)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print('JSBACH: '+str(np.mean(jsbach_data)/1e12)+
-                ','+str(np.std(jsbach_data)/1e12))
-        print('CLM: '+str(np.mean(clm_data)/1e12)+
-                ','+str(np.std(clm_data)/1e12))
-        print('CTEM: '+str(np.mean(ctem_data)/1e12)+
-                ','+str(np.std(ctem_data)/1e12))
-        print('LPJ_GUESS_BLAZE: '+str(np.mean(blaze_data)/1e12)+
-                ','+str(np.std(blaze_data)/1e12))
-        print('ORCHIDEE: '+str(np.mean(orchidee_data)/1e12)+
-                ','+str(np.std(orchidee_data)/1e12))
-        print('INFERNO: '+str(np.mean(inferno_data)/1e12)+
-                ','+str(np.std(inferno_data)/1e12))
+        for i in range(len(model_list)):
+            print(model_names[i]+': '+
+                    str(np.mean(data_list[i])/1e12)+
+                  ','+str(np.std(data_list[i])/1e12))
         print('Multimodel: '+str(np.mean(multimodel_mean)/1e12)+
                 ','+str(np.std(multimodel_mean)/1e12))     
 
     
     if pearson:
-        jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
-        clm_r = stats.pearsonr(gfed_data, clm_data)
-        ctem_r = stats.pearsonr(gfed_data, ctem_data)
-        blaze_r = stats.pearsonr(gfed_data, blaze_data)
-        orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
-        inferno_r = stats.pearsonr(gfed_data, inferno_data)
+        r_gfed_list = []
+        for data in data_list[1:]:
+            r_gfed_list.append(stats.pearsonr(gfed_data,data))
         
-        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
-        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
-        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
-        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
-        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
-        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        r_mm_list = []
+        for data in data_list[1:]:
+            r_mm_list.append(stats.pearsonr(multimodel_mean,data))
         
+        print "\n \n"
         print "Table of Emissions correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r
-        print 'CLM:', clm_r
-        print 'CTEM:', ctem_r
-        print 'LPJ_GUESS_BLAZE:', blaze_r
-        print 'ORCHIDEE:', orchidee_r
-        print 'INFERNO:', inferno_r
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_gfed_list[i]))
+
+        print "\n"
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print "Table of Emissions correlations with Multimodel Mean"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r2
-        print 'CLM:', clm_r2
-        print 'CTEM:', ctem_r2
-        print 'LPJ_GUESS_BLAZE:', blaze_r2
-        print 'ORCHIDEE:', orchidee_r2
-        print 'INFERNO:', inferno_r2
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_mm_list[i]))
     
-    plt.plot(years, jsbach_data, 'r', label='JSBACH')
-    plt.plot(years, clm_data, 'b', label='CLM')
-    plt.plot(years, ctem_data, 'g', label='CTEM')
-    plt.plot(years, blaze_data, 'm', label='LPJ-GUESS-BLAZE')
-    plt.plot(years, orchidee_data, 'y', label='ORCHIDEE')
-    plt.plot(years, inferno_data, 'c', label='INFERNO')
+    colour_map=iter(plt.cm.Dark2(
+            np.linspace(0,1,len(model_list)-1)))
+    for i in range(len(model_list[1:])):
+        c = next(colour_map)
+        plt.plot(years,np.divide(data_list[i+1],1e12),
+             c=c, label=model_names[i+1], linewidth=1.5)
     
-    plt.plot(years, gfed_data, color='k', linewidth=1.5, linestyle='--', label='GFED')
+    plt.plot(years, np.divide(gfed_data,1e12), color='k', 
+                    linewidth=1.5, linestyle='--', label='GFED')
     
-    plt.plot(years, multimodel_mean, 'k-.', label='Multimodel Mean')
-    plt.fill_between(years, multimodel_mean-multimodel_std, 
-                    multimodel_mean+multimodel_std, facecolor='grey', alpha=0.2)
+    plt.plot(years, np.divide(multimodel_mean,1e12), 'k-.',
+                     label='Multimodel Mean')
+    plt.fill_between(years, 
+            np.divide(multimodel_mean-multimodel_std,1e12), 
+            np.divide(multimodel_mean+multimodel_std,1e12), 
+            facecolor='grey', alpha=0.2)
     
     plt.xlabel('Year')
     plt.ylabel('Total Carbon Emissions ($Pg\, C/year$)')
     
-    plt.legend()
+    plt.legend(ncol=3)
     plt.show()
 
 
@@ -147,6 +139,9 @@ def plot_present_burnt_area(table=True, pearson=False):
     models' temporal correlations with GFED and the multimodel
     mean will be printed to the console.
     """
+    model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno']
+    model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
     gfed_data=[]
@@ -172,83 +167,71 @@ def plot_present_burnt_area(table=True, pearson=False):
         gfed_data.append(gfed.get_global_BA_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,blaze_data,orchidee_data])
+    data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
+            blaze_data,orchidee_data,inferno_data]
+    
+    multimodel_list = np.array(data_list)
     multimodel_mean = np.mean(multimodel_list, axis=0)
     multimodel_std = np.std(multimodel_list, axis=0)
     
     if table:
+        print '\n \n'
         print "Table of Mean Burnt Area"
         print "Model Name || (mean,stdev in millions of km^2)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print('JSBACH: '+str(np.mean(jsbach_data)/1e12)+
-                ','+str(np.std(jsbach_data)/1e12))
-        print('CLM: '+str(np.mean(clm_data)/1e12)+
-                ','+str(np.std(clm_data)/1e12))
-        print('CTEM: '+str(np.mean(ctem_data)/1e12)+
-                ','+str(np.std(ctem_data)/1e12))
-        print('LPJ_GUESS_BLAZE: '+str(np.mean(blaze_data)/1e12)+
-                ','+str(np.std(blaze_data)/1e12))
-        print('ORCHIDEE: '+str(np.mean(orchidee_data)/1e12)+
-                ','+str(np.std(orchidee_data)/1e12))
-        print('INFERNO: '+str(np.mean(inferno_data)/1e12)+
-                ','+str(np.std(inferno_data)/1e12))
+        for i in range(len(model_list)):
+            print(model_names[i]+': '+
+                    str(np.mean(data_list[i])/1e12)+
+                  ','+str(np.std(data_list[i])/1e12))
         print('Multimodel: '+str(np.mean(multimodel_mean)/1e12)+
                 ','+str(np.std(multimodel_mean)/1e12))   
     
     if pearson:
-        jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
-        clm_r = stats.pearsonr(gfed_data, clm_data)
-        ctem_r = stats.pearsonr(gfed_data, ctem_data)
-        blaze_r = stats.pearsonr(gfed_data, blaze_data)
-        orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
-        inferno_r = stats.pearsonr(gfed_data, inferno_data)
+        r_gfed_list = []
+        for data in data_list[1:]:
+            r_gfed_list.append(stats.pearsonr(gfed_data,data))
         
-        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
-        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
-        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
-        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
-        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
-        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        r_mm_list = []
+        for data in data_list[1:]:
+            r_mm_list.append(stats.pearsonr(multimodel_mean,data))
         
+        print '\n \n'
         print "Table of BA correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r
-        print 'CLM:', clm_r
-        print 'CTEM:', ctem_r
-        print 'LPJ_GUESS_BLAZE:', blaze_r
-        print 'ORCHIDEE:', orchidee_r
-        print 'INFERNO:', inferno_r
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_gfed_list[i]))
+
+        print "\n"
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print "Table of BA correlations with Multimodel Mean"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r2
-        print 'CLM:', clm_r2
-        print 'CTEM:', ctem_r2
-        print 'LPJ_GUESS_BLAZE:', blaze_r2
-        print 'ORCHIDEE:', orchidee_r2
-        print 'INFERNO:', inferno_r2
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_mm_list[i]))
     
-    plt.plot(years, np.divide(jsbach_data, 1e12), 'r', label='JSBACH')
-    plt.plot(years, np.divide(clm_data, 1e12), 'b', label='CLM')
-    plt.plot(years, np.divide(ctem_data, 1e12), 'g', label='CTEM')
-    plt.plot(years, np.divide(blaze_data, 1e12), 'm', label='LPJ-GUESS-BLAZE')
-    plt.plot(years, np.divide(orchidee_data, 1e12), 'y', label='ORCHIDEE')
-    plt.plot(years, np.divide(inferno_data, 1e12), 'c', label='INFERNO')
     
+    colour_map=iter(plt.cm.Dark2(
+            np.linspace(0,1,len(model_list)-1)))
+    for i in range(len(model_list[1:])):
+        c = next(colour_map)
+        plt.plot(years,np.divide(data_list[i+1],1e12),
+             c=c, label=model_names[i+1], linewidth=1.5)
+             
     plt.plot(years, np.divide(gfed_data,1e12), color='k', 
                     linewidth=1.5, linestyle='--', label='GFED')
     
-    plt.plot(years, np.divide(multimodel_mean,1e12), 'k-.', label='Multimodel Mean')
-    plt.fill_between(years, np.divide(multimodel_mean-multimodel_std,1e12), 
-                    np.divide(multimodel_mean+multimodel_std,1e12), 
-                    facecolor='grey', alpha=0.2)
+    plt.plot(years, np.divide(multimodel_mean,1e12), 'k-.',
+                     label='Multimodel Mean')
+    plt.fill_between(years, 
+            np.divide(multimodel_mean-multimodel_std,1e12), 
+            np.divide(multimodel_mean+multimodel_std,1e12), 
+            facecolor='grey', alpha=0.2)
     
     plt.xlabel('Year')
     plt.ylabel('Total Burnt Area (millions of $km^2$)')
     
-    plt.legend()
+    plt.legend(ncol=3)
     plt.show()
     
     
@@ -266,6 +249,9 @@ def plot_present_fuel_consumption(table=True, pearson = False):
     models' temporal correlations with GFED and the multimodel
     mean will be printed to the console.
     """
+    model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno']
+    model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     gfed_data=[]
@@ -278,85 +264,74 @@ def plot_present_fuel_consumption(table=True, pearson = False):
         clm_data.append(clm.get_global_mean_FC_yearly_rough(297+i,
             clm.emis_CLM, clm.BA_CLM, clm.grid_CLM, clm.time_data))
         ctem_data.append(ctem.get_global_mean_FC_yearly_rough(136+i,
-            ctem.emis_CTEM, ctem.BA_CTEM, ctem.grid_CTEM, ctem.landCover_CTEM))
+            ctem.emis_CTEM, ctem.BA_CTEM, ctem.grid_CTEM,
+            ctem.landCover_CTEM))
         blaze_data.append(blaze.get_global_mean_FC_yearly_rough(297+i,
-            blaze.emis_BLAZE, blaze.BA_BLAZE, blaze.grid_BLAZE, blaze.time_data))
-        orchidee_data.append(orchidee.get_global_mean_FC_yearly_rough(297+i,
-            orchidee.emis_ORCHIDEE, orchidee.BA_ORCHIDEE, orchidee.grid_ORCHIDEE,
-            orchidee.landCover_ORCHIDEE, orchidee.time_data))
-        inferno_data.append(inferno.get_global_mean_FC_yearly_rough(297+i,
-            inferno.emis_INFERNO, inferno.BA_INFERNO, inferno.grid_INFERNO,
-            inferno.landmask_INFERNO, inferno.landCover_INFERNO))
+            blaze.emis_BLAZE, blaze.BA_BLAZE, blaze.grid_BLAZE,
+            blaze.time_data))
+        orchidee_data.append(
+        orchidee.get_global_mean_FC_yearly_rough(297+i,
+            orchidee.emis_ORCHIDEE, orchidee.BA_ORCHIDEE,
+            orchidee.grid_ORCHIDEE,orchidee.landCover_ORCHIDEE,
+            orchidee.time_data))
+        inferno_data.append(
+        inferno.get_global_mean_FC_yearly_rough(297+i,
+            inferno.emis_INFERNO, inferno.BA_INFERNO,
+            inferno.grid_INFERNO,inferno.landmask_INFERNO,
+            inferno.landCover_INFERNO))
             
         gfed_data.append(gfed.get_global_mean_FC_yearly_rough(i,
                         gfed.data_GFED,gfed.grid_GFED))
 
-
-    multimodel_list = np.array([jsbach_data,clm_data,ctem_data,
-                            blaze_data,orchidee_data, inferno_data])
+    data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
+            blaze_data,orchidee_data,inferno_data]
+    
+    multimodel_list = np.array(data_list)
     multimodel_mean = np.mean(multimodel_list, axis=0)
     multimodel_std = np.std(multimodel_list, axis=0)
     
     if table:
+        print '\n \n'
         print "Table of Temporal Mean of Mean Fuel Consumption"
         print "Model Name || (mean,stdev in kg C per m^2 burned)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print('JSBACH: '+str(np.mean(jsbach_data))+
-                ','+str(np.std(jsbach_data)))
-        print('CLM: '+str(np.mean(clm_data))+
-                ','+str(np.std(clm_data)))
-        print('CTEM: '+str(np.mean(ctem_data))+
-                ','+str(np.std(ctem_data)))
-        print('LPJ_GUESS_BLAZE: '+str(np.mean(blaze_data))+
-                ','+str(np.std(blaze_data)))
-        print('ORCHIDEE: '+str(np.mean(orchidee_data))+
-                ','+str(np.std(orchidee_data)))
-        print('INFERNO: '+str(np.mean(inferno_data))+
-                ','+str(np.std(inferno_data)))
+        for i in range(len(model_list)):
+            print(model_names[i]+': '+
+                    str(np.mean(data_list[i]))+
+                  ','+str(np.std(data_list[i])))
         print('Multimodel: '+str(np.mean(multimodel_mean))+
                 ','+str(np.std(multimodel_mean))) 
     
     if pearson:
-        jsbach_r = stats.pearsonr(gfed_data, jsbach_data)
-        clm_r = stats.pearsonr(gfed_data, clm_data)
-        ctem_r = stats.pearsonr(gfed_data, ctem_data)
-        blaze_r = stats.pearsonr(gfed_data, blaze_data)
-        orchidee_r = stats.pearsonr(gfed_data, orchidee_data)
-        inferno_r = stats.pearsonr(gfed_data, inferno_data)
+        r_gfed_list = []
+        for data in data_list[1:]:
+            r_gfed_list.append(stats.pearsonr(gfed_data,data))
         
-        jsbach_r2 = stats.pearsonr(multimodel_mean, jsbach_data)
-        clm_r2 = stats.pearsonr(multimodel_mean, clm_data)
-        ctem_r2 = stats.pearsonr(multimodel_mean, ctem_data)
-        blaze_r2 = stats.pearsonr(multimodel_mean, blaze_data)
-        orchidee_r2 = stats.pearsonr(multimodel_mean, orchidee_data)
-        inferno_r2 = stats.pearsonr(multimodel_mean, inferno_data)
+        r_mm_list = []
+        for data in data_list[1:]:
+            r_mm_list.append(stats.pearsonr(multimodel_mean,data))
         
+        print '\n \n'
         print "Table of FC correlations with GFED"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r
-        print 'CLM:', clm_r
-        print 'CTEM:', ctem_r
-        print 'LPJ_GUESS_BLAZE:', blaze_r
-        print 'ORCHIDEE:', orchidee_r
-        print 'INFERNO:', inferno_r
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_gfed_list[i]))
+
+        print "\n"
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print "Table of FC correlations with Multimodel Mean"
         print "Model Name || (Pearson's r, p-value)"
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print 'JSBACH:', jsbach_r2
-        print 'CLM:', clm_r2
-        print 'CTEM:', ctem_r2
-        print 'LPJ_GUESS_BLAZE:', blaze_r2
-        print 'ORCHIDEE:', orchidee_r2
-        print 'INFERNO:', inferno_r2
+        for i in range(len(model_list[1:])):
+            print(model_names[i+1]+': '+str(r_mm_list[i]))
     
-    plt.plot(years, jsbach_data, 'r', label='JSBACH')
-    plt.plot(years, clm_data, 'b', label='CLM')
-    plt.plot(years, ctem_data, 'g', label='CTEM')
-    plt.plot(years, blaze_data, 'm', label='LPJ-GUESS-BLAZE')
-    plt.plot(years, orchidee_data, 'y', label='ORCHIDEE')
-    plt.plot(years, inferno_data, 'c', label='INFERNO')
+    colour_map=iter(plt.cm.Dark2(
+            np.linspace(0,1,len(model_list)-1)))
+    for i in range(len(model_list[1:])):
+        c = next(colour_map)
+        plt.plot(years,data_list[i+1],
+             c=c, label=model_names[i+1], linewidth=1.5)
     
     plt.plot(years, gfed_data, color='k', linewidth=1.5, linestyle='--', label='GFED')
     
@@ -367,14 +342,13 @@ def plot_present_fuel_consumption(table=True, pearson = False):
     plt.xlabel('Year')
     plt.ylabel('Mean Fuel Consumption ($kg\, C \, m^{-2} \, burned \, year^{-1}$)')
     
-    plt.legend()
+    plt.legend(ncol=3)
     plt.show()
 
 
-#plot_present_burnt_area(True)
-#plot_present_fuel_consumption_rough(True)
-#plot_present_fuel_consumption()
-#plot_present_emissions(True)
+#plot_present_burnt_area(True,True)
+#plot_present_fuel_consumption(True,True)
+#plot_present_emissions(True,True)
 
 
 #
@@ -401,6 +375,9 @@ def plot_past_emissions():
     and a shaded region that shows the 1 sigma range from
     the mean.
     """
+    model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno']
+    model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
     years = range(1700,1997,1)
@@ -435,26 +412,32 @@ def plot_past_emissions():
     orchidee_data_ma = movingaverage(orchidee_data)
     inferno_data_ma = movingaverage(inferno_data)    
     
-    multimodel_list = np.array([jsbach_data_ma,clm_data_ma,ctem_data_ma,
-                            blaze_data_ma,orchidee_data_ma])                       
+    data_list = [jsbach_data_ma,clm_data_ma,ctem_data_ma,
+        blaze_data_ma,orchidee_data_ma,inferno_data_ma]
+    
+    multimodel_list = np.array(data_list)                       
     multimodel_mean = np.nanmean(multimodel_list, axis=0)
     multimodel_std = np.nanstd(multimodel_list, axis=0)
     
-    plt.plot(years[19:], jsbach_data_ma, 'r', label='JSBACH')
-    plt.plot(years[19:], clm_data_ma, 'b', label='CLM')
-    plt.plot(years[19:], ctem_data_ma, 'g', label='CTEM')
-    plt.plot(years[19:], blaze_data_ma, 'm', label='LPJ-GUESS-BLAZE')
-    plt.plot(years[19:], orchidee_data_ma, 'y', label='ORCHIDEE')
-    plt.plot(years[19:], inferno_data_ma, 'c', label='INFERNO')
     
-    plt.plot(years[19:], multimodel_mean, 'k--', label='Multimodel Mean')
-    plt.fill_between(years[19:], multimodel_mean-multimodel_std, 
-                    multimodel_mean+multimodel_std, facecolor='grey', alpha=0.2)
+    colour_map=iter(plt.cm.Dark2(
+            np.linspace(0,1,len(model_list)-1)))
+    for i in range(len(model_list[1:])):
+        c = next(colour_map)
+        plt.plot(years[19:],np.divide(data_list[i],1e12),
+             c=c, label=model_names[i+1], linewidth=1.5)
+    
+    plt.plot(years[19:], np.divide(multimodel_mean, 1e12),
+             'k--', label='Multimodel Mean')
+    plt.fill_between(years[19:], 
+            np.divide(multimodel_mean-multimodel_std,1e12), 
+            np.divide(multimodel_mean+multimodel_std,1e12), 
+            facecolor='grey', alpha=0.2)
     
     plt.xlabel('Year')
     plt.ylabel('Total Carbon Emissions ($Pg\, C/year$)')
     
-    plt.legend()
+    plt.legend(ncol=3)
     plt.show()
 
 
@@ -499,27 +482,31 @@ def plot_past_burnt_area():
     orchidee_data_ma = movingaverage(orchidee_data)
     inferno_data_ma = movingaverage(inferno_data)    
     
-    multimodel_list = np.array([jsbach_data_ma,clm_data_ma,ctem_data_ma,
-                            blaze_data_ma,orchidee_data_ma])                       
+    data_list = [jsbach_data_ma,clm_data_ma,ctem_data_ma,
+        blaze_data_ma,orchidee_data_ma,inferno_data_ma]
+    
+    multimodel_list = np.array(data_list)
     multimodel_mean = np.nanmean(multimodel_list, axis=0)
     multimodel_std = np.nanstd(multimodel_list, axis=0)
     
-    plt.plot(years[19:], np.divide(jsbach_data_ma,1e12), 'r', label='JSBACH')
-    plt.plot(years[19:], np.divide(clm_data_ma,1e12), 'b', label='CLM')
-    plt.plot(years[19:], np.divide(ctem_data_ma,1e12), 'g', label='CTEM')
-    plt.plot(years[19:], np.divide(blaze_data_ma,1e12), 'm', label='LPJ-GUESS-BLAZE')
-    plt.plot(years[19:], np.divide(orchidee_data_ma,1e12), 'y', label='ORCHIDEE')
-    plt.plot(years[19:], np.divide(inferno_data_ma,1e12), 'c', label='INFERNO')
+    colour_map=iter(plt.cm.Dark2(
+            np.linspace(0,1,len(model_list)-1)))
+    for i in range(len(model_list[1:])):
+        c = next(colour_map)
+        plt.plot(years[19:],np.divide(data_list[i],1e12),
+             c=c, label=model_names[i+1], linewidth=1.5)
     
-    plt.plot(years[19:], np.divide(multimodel_mean, 1e12), 'k--', label='Multimodel Mean')
-    plt.fill_between(years[19:], np.divide(multimodel_mean-multimodel_std,1e12), 
-                    np.divide(multimodel_mean+multimodel_std,1e12), 
-                    facecolor='grey', alpha=0.2)
+    plt.plot(years[19:], np.divide(multimodel_mean, 1e12),
+             'k--', label='Multimodel Mean')
+    plt.fill_between(years[19:], 
+            np.divide(multimodel_mean-multimodel_std,1e12), 
+            np.divide(multimodel_mean+multimodel_std,1e12), 
+            facecolor='grey', alpha=0.2)
     
     plt.xlabel('Year')
     plt.ylabel('Total Burnt Area (millions of $km^2$)')
     
-    plt.legend()
+    plt.legend(ncol=3)
     plt.show()
 
 

@@ -546,7 +546,8 @@ def plot_map(year, year_period, model, var='FC',
         cb=m.colorbar(cs, "bottom")
     cb.set_label(title + ' ' + units)
     plt.title('Mean '+title+' for '+str(year)+'-'+
-        str(year+year_period)+', '+region_names[region]+', '+model)
+        str(year+year_period)+', '+
+         region_names[region]+', '+model.upper())
     if save:
         return fig
     else:
@@ -621,7 +622,7 @@ def plot_spatial_histogram(year, year_period, model,
     plt.ylabel('No. of Grid Cells')
     plt.title('Spatial Histogram of '+title+' for '+str(year)+
               '-'+str(year+year_period)+', '
-              +region_names[region]+', '+model)
+              +region_names[region]+', '+model.upper())
     if save:
         return fig
     else:
@@ -665,9 +666,10 @@ def plot_multimodel_box(year, year_period, var='FC',
                         
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno']
+    model_names = [label.upper() for label in model_list]            
     data=[]              
     if model=='all':     
-        x_labels = model_list
+        x_labels = model_names
         title_end = region_names[region]
         for model_name in model_list:
             grid = load_var_grid(year, year_period, model_name, var)
@@ -783,7 +785,7 @@ def interp_GFED_grid(year, year_period, model, var='FC',
         m.drawmeridians(np.arange(-180.,181.,60.))
         m.drawmapboundary(fill_color='white')
         m.imshow(new_grid,  interpolation='none')
-        plt.title("GFED Data Interpolated for " + model)
+        plt.title("GFED Data Interpolated for " + model.upper())
         plt.show()
     else:
         return new_grid
@@ -833,7 +835,7 @@ def get_spatial_correlations(year, year_period, var):
             str(year)+'-'+str(year+year_period))
     print('===========================================')
     for i in range(len(pearson_list)):
-        print(model_list[i+1]+': '+str(pearson_list[i]))
+        print(model_list[i+1].upper()+': '+str(pearson_list[i]))
     return pearson_list
 
 
@@ -902,7 +904,7 @@ def plot_diff_map(year, year_period, model, var,
     cs=m.imshow(diff_grid,  interpolation='none',
                 cmap=plt.cm.coolwarm)
     plt.title("Relative Difference in "+var+
-                ", GFED vs "+ model)
+                ", GFED vs "+ model.upper())
     if binned:
         cb=m.colorbar(cs, "bottom", boundaries=bounds)
         cb.ax.set_xticklabels(ticks)
