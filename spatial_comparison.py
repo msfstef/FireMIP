@@ -180,8 +180,10 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
         region_data = gfed.grid_GFED["basis_regions"]
         region_data = region_data[::-1,:]
     elif reg_type=='gfed':
+        title = 'GFED Regions Interpolated for ' + model.upper()
         region_data = interp_regions(lons, lats)
     else:
+        title = 'Boxed Regions in '+ model.upper() + ' resolution'
         region_data = create_box_regions(lons,lats)
     if plot:
         fig=plt.figure()
@@ -192,7 +194,7 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
         m.drawmeridians(np.arange(-180.,181.,60.))
         m.drawmapboundary(fill_color='white')
         m.imshow(region_data, cmap=plt.cm.rainbow,  interpolation='none')
-        plt.title("GFED Regions Interpolated for " + model)
+        plt.title(title)
         plt.show()
     else:
         return region_data
@@ -200,7 +202,8 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
 
 def get_regional_var_grid(year, year_period, region, model, 
                        var, reg_type='boxes', grid=False,
-                        per_area = False, keep_time=False):
+                        per_area = False, keep_time=False,
+                        all_regions=False):
     if type(grid) is bool:
         full_grid = load_var_grid(year,year_period,model,var,
                                     per_area,keep_time)
@@ -208,15 +211,29 @@ def get_regional_var_grid(year, year_period, region, model,
         full_grid = grid
     region_data = generate_regions(model, reg_type)
     
+    if all_regions:
+        region_grid_list = []
+        for region in range(13):
+            # Set desired region to 1 and every other region to 0.
+            region_map = np.copy(region_data)
+            region_map[region_map != region] = 0.
+            region_map[region_map == region] = 1.
+            
+            regional_grid = np.multiply(full_grid, region_map)
+            region_grid_list.append(regional_grid)
+        region_grid_list = np.array(region_grid_list)
+        return region_grid_list
+    
     # Set desired region to 1 and every other region to 0.
     region_data[region_data != region] = 0.
     region_data[region_data == region] = 1.
     
     regional_grid = np.multiply(full_grid, region_data)
     return regional_grid
+
     
     
-#generate_regions('inferno', plot=True)
+#generate_regions('spitfire', plot=True)
 
 
 #

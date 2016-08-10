@@ -25,6 +25,8 @@ def get_grid_burnt_area(year, month_period, BA_data, grid_data, keep_time=False)
     BA = np.divide(BA, 100.)
     
     burnt_area_data = np.multiply(BA, grid_data["cell_area"])
+    burnt_area_data = np.array(burnt_area_data)
+    burnt_area_data[burnt_area_data<0.]=0
     if keep_time:
         return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
@@ -77,12 +79,16 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data,
     
     # Ignore overflow warning.
     np.seterr(over='ignore')
-    emis_rate_data = np.multiply(emis_data["Cfire.monthly"][time:time+month_period], grid_data["cell_area"])
+    emis = emis_data["Cfire.monthly"][time:time+month_period]
+    emis_rate_data = np.multiply(emis, grid_data["cell_area"])
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis])
+    emissions = np.array(emis_per_month)
+    emissions[emissions<0.]=0.
+    
     if keep_time:
-        return emis_per_month
-    emissions = np.sum(emis_per_month, axis = 0)
+        return emissions
+    emissions = np.sum(emissions, axis = 0)
     return emissions
 
 def get_global_emissions_yearly(year, emis_data, grid_data, time_data):
@@ -137,6 +143,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time
     inverse_BA = 1./np.array(fractional_BA)
     # Remove infinities due to division by 0.
     inverse_BA[inverse_BA == np.inf] = 0
+    inverse_BA[inverse_BA<0.]=0.
     
     
     emis = emis_data["Cfire.monthly"][time:time+month_period]
@@ -144,7 +151,9 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time
                 sec_per_month[:, np.newaxis, np.newaxis])
     if not monthly:
         emis = np.sum(emis, axis=0)
-        
+    emis = np.array(emis)
+    emis[emis<0.]=0.    
+    
     fuel_consumption = np.multiply(emis,inverse_BA)
     if monthly:
         fuel_consumption = np.nansum(fuel_consumption, axis = 0)

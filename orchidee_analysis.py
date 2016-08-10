@@ -167,15 +167,15 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
 
     BA = np.array(BA_data["burntArea"][time:time+month_period])
     BA = np.multiply(landCover, BA)
-    #BA[BA<0.] = 0
-    #BA[BA>1e10] = 0
+
     # Assume fractional, add up pft dependency.
     BA = np.sum(BA, axis=1)
     if not monthly:
         BA=np.sum(BA,axis=0)
     
     inverse_BA = 1./BA
-
+    # Remove infinities.
+    inverse_BA[inverse_BA==np.inf] = 0.
     
     emis= np.multiply(landCover, np.array(emis_data["fFirepft"][time:time+month_period]))
     # Add up pft dependency.

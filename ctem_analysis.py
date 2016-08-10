@@ -84,6 +84,7 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
     emissions = np.sum(emis_per_month, axis = 1)
+    emissions[emissions<0]=0.
     if keep_time:
         return emissions
     emissions = np.sum(emissions, axis = 0)
@@ -167,6 +168,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, land
                 
     if not monthly:
         emis=np.sum(emis,axis=0)
+    emis[emis<0]=0.
     
     fuel_consumption = np.multiply(emis, inverse_BA)  
     if monthly:

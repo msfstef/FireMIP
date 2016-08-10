@@ -1,4 +1,5 @@
 import spatial_comparison as spatial
+import temporal_comparison as temporal
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
@@ -78,4 +79,33 @@ def generate_regional_box_plots():
         print(model+' finished!')
     print "~Box Plots Generated~"
     
+    
+def generate_model_specific_plots():
+    """
+    Generates all model specific plots.
+    """
+    generate_maps()
+    generate_diff_maps()
+    generate_regional_box_plots()
+    
+    
+def generate_global_temporal_plots():
+    """
+    Generates temporal plots for all variables, along with
+    tables of means and standard deviations, correlations with
+    GFED, and correlations with the multimodel mean.
+    """
+    var_list = ['FC','emis','BA']
+    for var in var_list:
+        fig=temporal.plot_time_series(1997,16,var,0,
+                means=True,corr_gfed=True,corr_multimodel=True,
+                save=True)
+        fig.savefig('./figures/temporal_comparison/present_'+
+                   get_var_name(var)+'_global.png')
+        plt.close(fig)
+        print 'Plot of ', get_var_name(var), ' generated!'
+
+
+
+        
 
