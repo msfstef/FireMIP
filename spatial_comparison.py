@@ -143,6 +143,13 @@ def get_lons_lats(model, standard=True):
         lon_shift = np.max(lons)/2.
         if standard:
             lons = lons - lon_shift
+    elif model=='spitfire':
+        lats = spitfire.grid_SPITFIRE["latitude"]
+        lons = spitfire.grid_SPITFIRE["longitude"]
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = 0.
+        
     if standard:
         return lons, lats
     else:
@@ -152,7 +159,7 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
     """
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
+    'inferno', 'spitfire'
         
     Argument reg_type can be set to either 'gfed' or 'boxes' to
     generate the interpolated GFED regions or boxed latlon regions
@@ -192,9 +199,11 @@ def generate_regions(model='gfed', reg_type='boxes', plot=False):
 
 
 def get_regional_var_grid(year, year_period, region, model, 
-                       var, reg_type='boxes', grid=False):
+                       var, reg_type='boxes', grid=False,
+                        per_area = False, keep_time=False):
     if type(grid) is bool:
-        full_grid = load_var_grid(year,year_period,model,var)
+        full_grid = load_var_grid(year,year_period,model,var,
+                                    per_area,keep_time)
     else:
         full_grid = grid
     region_data = generate_regions(model, reg_type)
@@ -214,13 +223,14 @@ def get_regional_var_grid(year, year_period, region, model,
 # Spatial Global Analysis Toolkit
 #
 
-def load_var_grid(year, year_period, model, var='FC', per_area=True):
+def load_var_grid(year, year_period, model, var='FC', 
+                    per_area=True, keep_time=False):
     """
     Year is in absolute terms, e.g. 1997.
     
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
+    'inferno', 'spitfire'
     
     Also takes argument var, which is a string that can take either
     'FC', 'BA', or 'emis' as an input, which will return the
@@ -229,6 +239,11 @@ def load_var_grid(year, year_period, model, var='FC', per_area=True):
     
     per_area argument determines whether variables should be returned in
     units of var/m^2 or in absolute terms. Default is False.
+    
+    keep_time argument determines whether the output grid will also have
+    time data or if it will be summed over it. Default is False. This is
+    used in the temporal comparison module, and only works for emissions
+    and burnt area.
     """
     year_adj = year-1700
     year_ctem = year-1861
@@ -270,124 +285,193 @@ def load_var_grid(year, year_period, model, var='FC', per_area=True):
                      inferno.landmask_INFERNO,inferno.landCover_INFERNO)
             # Convert to standard format.
             grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+        elif model == 'spitfire':
+            grid = spitfire.get_grid_fuel_consumption(year_adj, year_period*12,
+                    spitfire.emis_SPITFIRE,spitfire.BA_SPITFIRE)
             
     elif var == 'emis':
         if model == 'gfed':
             grid = gfed.get_grid_emissions(year_gfed,year_period*12,
-                                       gfed.data_GFED, gfed.grid_GFED)
+                                       gfed.data_GFED, gfed.grid_GFED,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
+            if keep_time:
+                grid = grid[:,::-1,:]
+            else:
+                grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, gfed.grid_GFED["grid_cell_area"])
         elif model == 'jsbach':
             grid = jsbach.get_grid_emissions(year_adj,year_period*12,
-                                         jsbach.emis_JSBACH, jsbach.grid_JSBACH)
+                                         jsbach.emis_JSBACH, jsbach.grid_JSBACH,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = grid[:,::-1,:]
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = grid[::-1,:]
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, jsbach.grid_JSBACH["area"])
         elif model == 'clm':
             grid = clm.get_grid_emissions(year_adj,year_period*12,
-                                clm.emis_CLM,clm.grid_CLM,clm.time_data)
+                                clm.emis_CLM,clm.grid_CLM,clm.time_data,
+                                keep_time=keep_time)
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, clm.grid_CLM["cell_area"])
         elif model == 'ctem':
             grid = ctem.get_grid_emissions(year_ctem,year_period*12,
-                         ctem.emis_CTEM,ctem.grid_CTEM,ctem.landCover_CTEM)    
+                         ctem.emis_CTEM,ctem.grid_CTEM,ctem.landCover_CTEM,
+                                       keep_time=keep_time)  
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, ctem.grid_CTEM["cell_area"])
         elif model == 'blaze':
             grid = blaze.get_grid_emissions(year_adj,year_period*12,
-                               blaze.emis_BLAZE,blaze.grid_BLAZE,blaze.time_data)
+                               blaze.emis_BLAZE,blaze.grid_BLAZE,blaze.time_data,
+                                       keep_time=keep_time)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, blaze.grid_BLAZE["cell_area"])
         elif model == 'orchidee':
             grid = orchidee.get_grid_emissions(year_adj,year_period*12,
                      orchidee.emis_ORCHIDEE,orchidee.grid_ORCHIDEE,
-                     orchidee.landCover_ORCHIDEE,orchidee.time_data)
+                     orchidee.landCover_ORCHIDEE,orchidee.time_data,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
+            if keep_time:
+                grid = grid[:,::-1,:]
+            else:
+                grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, orchidee.grid_ORCHIDEE["cell_area"])
         elif model == 'inferno':
             grid = inferno.get_grid_emissions(year_adj,year_period*12,
                      inferno.emis_INFERNO,inferno.grid_INFERNO,
-                     inferno.landmask_INFERNO,inferno.landCover_INFERNO)
+                     inferno.landmask_INFERNO,inferno.landCover_INFERNO,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, inferno.grid_INFERNO["cell_area"])
+        elif model == 'spitfire':
+            grid = spitfire.get_grid_emissions(year_adj, year_period*12,
+                    spitfire.emis_SPITFIRE,spitfire.grid_SPITFIRE,
+                                       keep_time=keep_time)
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, spitfire.grid_SPITFIRE["cell_area"])
                 
     elif var == 'BA':
         if model == 'gfed':
             grid = gfed.get_grid_burnt_area(year_gfed,year_period*12,
-                                          gfed.data_GFED, gfed.grid_GFED)
+                                          gfed.data_GFED, gfed.grid_GFED,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
+            if keep_time:
+                grid = grid[:,::-1,:]
+            else:
+                grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, gfed.grid_GFED["grid_cell_area"])
         elif model == 'jsbach':
             grid = jsbach.get_grid_burnt_area(year_adj,year_period*12,
-                                         jsbach.BA_JSBACH, jsbach.grid_JSBACH)
+                                         jsbach.BA_JSBACH, jsbach.grid_JSBACH,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = grid[:,::-1,:]
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = grid[::-1,:]
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, jsbach.grid_JSBACH["area"])
         elif model == 'clm':
             grid = clm.get_grid_burnt_area(year_adj,year_period*12,
-                                clm.BA_CLM,clm.grid_CLM,clm.time_data)
+                                clm.BA_CLM,clm.grid_CLM,clm.time_data,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, clm.grid_CLM["cell_area"])
         elif model == 'ctem':
             grid = ctem.get_grid_burnt_area(year_ctem,year_period*12,
-                         ctem.BA_CTEM,ctem.grid_CTEM,ctem.landCover_CTEM)
+                         ctem.BA_CTEM,ctem.grid_CTEM,ctem.landCover_CTEM,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, ctem.grid_CTEM["cell_area"])
         elif model == 'blaze':
             grid = blaze.get_grid_burnt_area(year_adj,year_period*12,
-                               blaze.BA_BLAZE,blaze.grid_BLAZE)
+                               blaze.BA_BLAZE,blaze.grid_BLAZE,
+                                       keep_time=keep_time)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, blaze.grid_BLAZE["cell_area"])
         elif model == 'orchidee':
             grid = orchidee.get_grid_burnt_area(year_adj,year_period*12,
                      orchidee.BA_ORCHIDEE,orchidee.grid_ORCHIDEE,
-                     orchidee.landCover_ORCHIDEE)
+                     orchidee.landCover_ORCHIDEE,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = grid[::-1,:]
+            if keep_time:
+                grid = grid[:,::-1,:]
+            else:
+                grid = grid[::-1,:]
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, orchidee.grid_ORCHIDEE["cell_area"])
         elif model == 'inferno':
             grid = inferno.get_grid_burnt_area(year_adj,year_period*12,
                      inferno.BA_INFERNO,inferno.grid_INFERNO,
-                     inferno.landmask_INFERNO,inferno.landCover_INFERNO)
+                     inferno.landmask_INFERNO,inferno.landCover_INFERNO,
+                                       keep_time=keep_time)
             # Convert to standard format.
-            grid = np.roll(grid, len(grid[0,:])/2,axis=1)
+            if keep_time:
+                grid = np.roll(grid, len(grid[0,0,:])/2,axis=2)
+            else:
+                grid = np.roll(grid, len(grid[0,:])/2,axis=1)
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, inferno.grid_INFERNO["cell_area"])
+        elif model == 'spitfire':
+            grid = spitfire.get_grid_burnt_area(year_adj, year_period*12,
+                    spitfire.BA_SPITFIRE,spitfire.grid_SPITFIRE,
+                                       keep_time=keep_time)
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, spitfire.grid_SPITFIRE["cell_area"])
                      
     return grid
 
@@ -399,7 +483,7 @@ def plot_map(year, year_period, model, var='FC',
     
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
+    'inferno', 'spitfire'
     
     Also takes argument var, which is a string that can take either
     'FC', 'BA', or 'emis' as an input, which will return the
@@ -546,7 +630,7 @@ def plot_map(year, year_period, model, var='FC',
         cb=m.colorbar(cs, "bottom")
     cb.set_label(title + ' ' + units)
     plt.title('Mean '+title+' for '+str(year)+'-'+
-        str(year+year_period)+', '+
+        str(year+year_period-1)+', '+
          region_names[region]+', '+model.upper())
     if save:
         return fig
@@ -561,7 +645,7 @@ def plot_spatial_histogram(year, year_period, model,
     
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
+    'inferno', 'spitfire'
     
     Also takes argument var, which is a string that can take either
     'FC', 'BA', or 'emis' as an input, which will return the
@@ -621,7 +705,7 @@ def plot_spatial_histogram(year, year_period, model,
     plt.xlabel(title + ' ' + units)
     plt.ylabel('No. of Grid Cells')
     plt.title('Spatial Histogram of '+title+' for '+str(year)+
-              '-'+str(year+year_period)+', '
+              '-'+str(year+year_period-1)+', '
               +region_names[region]+', '+model.upper())
     if save:
         return fig
@@ -665,7 +749,7 @@ def plot_multimodel_box(year, year_period, var='FC',
                         'SEAS','EQAS','AUST']
                         
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno', 'spitfire']
     model_names = [label.upper() for label in model_list]            
     data=[]              
     if model=='all':     
@@ -707,15 +791,15 @@ def plot_multimodel_box(year, year_period, var='FC',
                 labels = x_labels)
     plt.ylabel(title +' '+ units)
     plt.title('Box plot of '+title+' for '+str(year)+
-            '-'+str(year+year_period)+', '+title_end)
+            '-'+str(year+year_period-1)+', '+title_end)
     if save:
         return fig
     else:
         plt.show()
 
 
-#plot_map(1997,1,'orchidee', 'BA', binned=True)
-#plot_multimodel_box(1997,15,'FC')
+#plot_map(1997,15,'spitfire', 'FC', binned=True)
+#plot_multimodel_box(1997,15,'FC', model='spitfire')
 #plot_spatial_histogram(1997, 15, 'ctem', var='FC')
 
 
@@ -769,7 +853,7 @@ def interp_GFED_grid(year, year_period, model, var='FC',
     Argument plot can be set to True to show map of interpolated
     data, useful for checks.
     """
-    lons, lats = get_lons,lats(model)
+    lons, lats = get_lons_lats(model)
       
     lons, lats = np.meshgrid(lons, lats)
     
@@ -825,14 +909,14 @@ def get_spatial_correlations(year, year_period, var):
     metric/observations.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     pearson_list = []
     for model in model_list[1:]:
         pearson = calc_spatial_correlation(year,year_period,model,var)
         pearson_list.append(pearson)
     
     print('Table of Correlations for '+var+' for '+
-            str(year)+'-'+str(year+year_period))
+            str(year)+'-'+str(year+year_period-1))
     print('===========================================')
     for i in range(len(pearson_list)):
         print(model_list[i+1].upper()+': '+str(pearson_list[i]))
@@ -849,7 +933,7 @@ def plot_diff_map(year, year_period, model, var,
     
     Takes argument model, which is a string that can be one of the
     following: 'gfed', 'jsbach', 'clm', 'ctem', 'blaze', 'orchidee',
-    'inferno'
+    'inferno','spitfire'
     
     Also takes argument var, which is a string that can take either
     'FC', 'BA', or 'emis' as an input, which will return the
@@ -951,7 +1035,8 @@ def interp_std_func(model, var, year, year_period,
 def plot_std_map(year, year_period, var='FC', method='nearest',
                  ref_grid='gfed', binned='True'):
     model_list = ['jsbach', 'clm', 'blaze', 
-                    'orchidee', 'inferno','ctem']
+                    'orchidee', 'inferno','ctem',
+                    'spitfire']
     grid_list = []
     if ref_grid=='gfed':
         print 'Using GFED resolution.'
@@ -1019,7 +1104,7 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
     m.drawmapboundary(fill_color='white')
     cs=m.imshow(std_grid,  interpolation='none')
     plt.title("Multimodel Standard Deviations for "+title+
-                ", "+str(year)+'-'+str(year+year_period))
+                ", "+str(year)+'-'+str(year+year_period-1))
     if binned:
         cb=m.colorbar(cs, "bottom", boundaries=bounds)
         cb.ax.set_xticklabels(ticks)
@@ -1031,6 +1116,6 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
 
 
 #get_spatial_correlations(1997,15,'FC')
-#plot_diff_map(1997,15,'clm','FC')
+#plot_diff_map(1997,15,'spitfire','FC')
 #plot_std_map(1997,15,ref_grid='ctem')
 

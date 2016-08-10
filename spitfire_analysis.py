@@ -16,11 +16,15 @@ grid_SPITFIRE = Dataset('../../model_data/HalfDegree-gridarea-8975.nc',
 # Burnt Area Analysis
 #
 
-def get_grid_burnt_area(year, month_period, BA_data, grid_data):
+def get_grid_burnt_area(year, month_period, BA_data, grid_data, keep_time=False):
     BA = BA_data["burntArea"][year*12:year*12+month_period]
-    BA = np.divide(BA, 100.)
     
+    BA = np.sum(BA, axis=1)
+    BA = np.divide(BA, 100.)
     burnt_area_data = np.multiply(BA, grid_data["cell_area"])
+    
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
     
@@ -49,15 +53,15 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data):
     plt.legend()
     plt.show()
 
-#plot_global_BA_yearly(16,BA_BLAZE, grid_BLAZE)
-#print get_global_BA_yearly(300, BA_BLAZE, grid_BLAZE)
+#plot_global_BA_yearly(16,BA_SPITFIRE, grid_SPITFIRE)
+#print get_global_BA_yearly(300, BA_SPITFIRE, grid_SPITFIRE)
 
 #
 # Carbon Emissions Analysis
 #
 
 
-def get_grid_emissions(year_start, month_period, emis_data, grid_data):
+def get_grid_emissions(year_start, month_period, emis_data, grid_data, keep_time=False):
     time = int(year_start*12)
     
     # Original output is in 'per month' units, so using
@@ -74,6 +78,8 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data):
     emis_rate_data = np.multiply(actual_emis_data, 
                                 grid_data["cell_area"])
     emis_per_month = np.multiply(emis_rate_data,sec_per_month)
+    if keep_time:
+        return emis_per_month
     emissions = np.sum(emis_per_month, axis = 0)
     return emissions
 
@@ -98,67 +104,10 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data):
     plt.xlabel('Year')
     plt.legend()
     plt.show()
-
-def plot_map_period(year_start, year_period, emis_data, grid_data):
-    month_period = int(year_period*12)
-    map_data = get_grid_emissions(year_start,month_period, 
-                emis_data, grid_data)
-    map_data = np.divide(map_data,grid_data["cell_area"])
-    map_data = np.divide(map_data, year_period)
-    map_data[map_data==0]=np.nan
-    
-    lats = grid_data["latitude"]
-    lons = grid_data["longitude"]
-    lons, lats = np.meshgrid(lons, lats)
-
-    binned=True
-    if binned:
-            ticks=[0.,.005,.01,.02,.05,.1,.2,.5,1.,'>5.0']
-            bounds=[0,1,2,3,4,5,6,7,8,9]
-            for index,value in np.ndenumerate(map_data):
-                bin = 'nan'
-                if 0.<value<0.005:
-                    bin = 0
-                elif 0.005<=value<0.01:
-                    bin = 1
-                elif 0.01<=value<0.02:
-                    bin = 2
-                elif 0.02<=value<0.05:
-                    bin = 3
-                elif 0.05<=value<0.1:
-                    bin = 4
-                elif 0.1<=value<0.2:
-                    bin = 5
-                elif 0.2<=value<0.5:
-                    bin = 6
-                elif 0.5<=value<1.:
-                    bin = 7
-                elif 1.<=value:
-                    bin = 8
-                if bin != 'nan':    
-                    map_data[index] = bin
-    
-    fig=plt.figure()
-    m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
-    urcrnrlon=180,urcrnrlat=90)
-    m.drawcoastlines()
-    m.drawparallels(np.arange(-90.,91.,30.))
-    m.drawmeridians(np.arange(-180.,181.,60.))
-    m.drawmapboundary(fill_color='white')
-    cs=m.imshow(map_data, interpolation='none')
-    if binned:
-        cb=m.colorbar(cs, "bottom", boundaries=bounds)
-        cb.ax.set_xticklabels(ticks)
-    else:
-        cb=m.colorbar(cs, "bottom")
-    cb.set_label("kg C per m^2")
-    plt.title("Total Emissions 1997-2012, SPITFIRE")
-    plt.show()
     
  
-#plot_global_emissions_yearly(20,emis_SPITFIRE, grid_SPITFIRE, landCover_SPITFIRE)
-#print get_global_emissions_yearly(312,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
-#plot_map_period(297,15,emis_SPITFIRE,grid_SPITFIRE, landCover_SPITFIRE)
+#plot_global_emissions_yearly(20,emis_SPITFIRE, grid_SPITFIRE)
+#print get_global_emissions_yearly(312,emis_SPITFIRE,grid_SPITFIRE)
 
 
 #
@@ -166,7 +115,7 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
 #
 
 def get_grid_fuel_consumption(year_start, month_period, emis_data,
-                 BA_data, landCover_data, monthly=False):
+                 BA_data, monthly=False):
     time = int(year_start*12)
     
     # Original output is in 'per month' units, so using
@@ -177,8 +126,8 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data,
     np.seterr(divide='ignore')
     
     BA = BA_data["burntArea"][time:time+month_period]
-    fractional_BA = np.divide(BA, 100)
-    fractional_BA = np.sum(fractional_BA, axis=1)
+    BA = np.sum(BA, axis=1)
+    fractional_BA = np.divide(BA, 100.)
     if not monthly:
         fractional_BA = np.sum(fractional_BA, axis=0)
     inverse_BA = 1./np.array(fractional_BA)
@@ -186,6 +135,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data,
     inverse_BA[inverse_BA == np.inf] = 0
     
     emis = emis_data["fFirepft"][time:time+month_period]
+    emis = np.sum(emis, axis=1)
     emis = np.multiply(emis, sec_per_month)
     if not monthly:
         emis = np.sum(emis, axis=0)
@@ -226,11 +176,9 @@ def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data):
     plt.xlabel('Year')
     plt.legend()
     plt.show()
-    
-#print get_global_FC_yearly(300, emis_CLM, BA_CLM, landCover_CLM)
-#plot_FC_map_period(140,1 , emis_CTEM,BA_CTEM,landCover_CTEM)
-#plot_global_mean_FC_yearly(20, emis_CTEM,BA_CTEM,grid_CTEM, landCover_CTEM)
-#print get_global_mean_FC_yearly(150,emis_CTEM,BA_CTEM,grid_CTEM, landCover_CTEM)
+
+
+#print get_global_mean_FC_yearly_rough(300,emis_SPITFIRE,BA_SPITFIRE,grid_SPITFIRE)
 
 
 

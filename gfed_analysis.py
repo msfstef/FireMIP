@@ -14,13 +14,15 @@ grid_GFED = Dataset('../../model_data/GFED_grid.nc',
 # Burnt Area Analysis
 #
 
-def get_grid_burnt_area(year, month_period, data, grid_data):
+def get_grid_burnt_area(year, month_period, data, grid_data, keep_time=False):
     time = int(year*12)
     BA = np.array(data["BA"][time:time+month_period])
     # Convert to fractional.
     BA = np.divide(BA,100.)
     
     burnt_area_data = np.multiply(BA, grid_data["grid_cell_area"])
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
     
@@ -59,7 +61,7 @@ def plot_global_BA_yearly(no_years, data, grid_data):
 #
 
 
-def get_grid_emissions(year_start, month_period, data, grid_data):
+def get_grid_emissions(year_start, month_period, data, grid_data, keep_time=False):
     time = int(year_start*12)
    
     # Ignore overflow warning.
@@ -70,6 +72,8 @@ def get_grid_emissions(year_start, month_period, data, grid_data):
     emis_data = np.divide(emis_data, 1000.)
     
     emis_per_month = np.multiply(emis_data, grid_data["grid_cell_area"])
+    if keep_time:
+        return emis_per_month
     emissions = np.sum(emis_per_month, axis = 0)
     return emissions
 

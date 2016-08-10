@@ -16,12 +16,14 @@ grid_JSBACH = Dataset('../../model_data/JSBACH_grid.nc',
 # Burnt Area Analysis
 #
 
-def get_grid_burnt_area(year, month_period, BA_data, grid_data):
+def get_grid_burnt_area(year, month_period, BA_data, grid_data, keep_time=False):
     BA = BA_data["burntArea"][year*12:year*12+month_period]
-    BA[BA>1.] = 0
+    BA[BA>1e3] = 0
     
     burnt_area_data = np.multiply(BA, grid_data["area"])
-    burnt_area_data = np.sum(burnt_area_data, axis=0)
+    burnt_area_data = np.sum(burnt_area_data, axis=1)
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
     
@@ -60,18 +62,14 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data):
 #
 
 
-def get_grid_emissions(year_start, month_period, emis_data, grid_data):
+def get_grid_emissions(year_start, month_period, emis_data, grid_data, keep_time=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(emis_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(emis_data["time"]):
-                days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(emis_data["time"]):
             days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     # Ignore overflow warning.
@@ -79,8 +77,10 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data):
     emis_rate_data = np.multiply(emis_data["fFirepft"][time:time+month_period], grid_data["area"])
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
-    emissions_pft = np.sum(emis_per_month, axis = 0)
-    emissions = np.sum(emissions_pft, axis = 0)
+    emissions = np.sum(emis_per_month, axis = 1)
+    if keep_time:
+        return emissions
+    emissions = np.sum(emissions, axis = 0)
     return emissions
 
 def get_global_emissions_yearly(year, emis_data, grid_data):
@@ -117,15 +117,11 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data):
 def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, monthly=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(emis_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(emis_data["time"]):
-                days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(emis_data["time"]):
             days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     # Ignore division by zero warning. Returns NaN.
@@ -133,7 +129,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, mont
     
     BA = (np.array(BA_JSBACH["burntArea"][time:time+month_period]))
     # Remove fill values.
-    BA[BA>1.] = 0
+    BA[BA>1e3] = 0
     BA[BA<1e-15]=0
     # Add up pft dependency.
     BA = np.sum(BA,axis=1)

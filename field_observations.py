@@ -126,10 +126,10 @@ def compare_points(model, region=0):
     spatial_comparison module. 
     """
     observ_grid = get_observ_grid(model)
-    observ_grid = spt.get_regional_var_grid(1970,42,
+    observ_grid = spt.get_regional_var_grid(1970,43,
                                     region,model,'FC',
                                     grid = observ_grid)
-    model_grid = spt.get_regional_var_grid(1970,42,
+    model_grid = spt.get_regional_var_grid(1970,43,
                                     region,model,'FC')
                                     
     diff_grid = model_grid-observ_grid
@@ -174,10 +174,10 @@ def calc_mean_dev_total(model, region=0):
     are extremely sparse compared to the model outputs. 
     """
     observ_grid = get_observ_grid(model)
-    observ_grid = spt.get_regional_var_grid(1970,42,
+    observ_grid = spt.get_regional_var_grid(1970,43,
                                     region,model,'FC',
                                     grid = observ_grid)
-    model_grid = spt.get_regional_var_grid(1970,42,
+    model_grid = spt.get_regional_var_grid(1970,43,
                                     region,model,'FC')
     
     observ_vals = observ_grid[observ_grid>0]
@@ -204,7 +204,7 @@ def plot_bar_chart(model='all'):
     is the default setting.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     colour_map=iter(plt.cm.Dark2(np.linspace(0,1,len(model_list))))
     region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
                    'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
@@ -261,6 +261,10 @@ def plot_bar_chart(model='all'):
     
      
 #plot_bar_chart()
-#print calc_mean_dev_points('clm',12)
+#print calc_mean_dev_points('orchidee',11,True)
 #print calc_mean_dev_total('clm',12)
+model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
+                'blaze', 'orchidee', 'inferno','spitfire']
+#for model in model_list:
+#    print calc_mean_dev_points(model,11,True)
 

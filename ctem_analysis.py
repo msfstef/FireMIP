@@ -16,7 +16,7 @@ landCover_CTEM = Dataset('../../model_data/CTEM_S1_landCoverFrac.nc',
 # Burnt Area Analysis
 #
 
-def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
+def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data, keep_time=False):
     BA = BA_data["burntArea"][year*12:year*12+month_period, :9]
     BA = np.array(BA)
     BA[BA>100]=0
@@ -25,7 +25,9 @@ def get_grid_burnt_area(year, month_period, BA_data, grid_data, landCover_data):
     BA = np.multiply(BA, landCover_data["landCoverFrac"][year*12:year*12+month_period])
     
     burnt_area_data = np.multiply(BA, grid_data["cell_area"])
-    burnt_area_data = np.sum(burnt_area_data, axis=0)
+    burnt_area_data = np.sum(burnt_area_data, axis=1)
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
 
@@ -64,18 +66,14 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data, landCover_data):
 #
 
                 
-def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover_data):
+def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover_data, keep_time=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(emis_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(emis_data["time"]):
-                days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(emis_data["time"]):
             days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     # Ignore overflow warning.
@@ -85,8 +83,10 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, landCover
     emis_rate_data = np.multiply(emis_data["fFirepft"][time:time+month_period, :9], complete_area_data)
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
-    emissions_pft = np.sum(emis_per_month, axis = 0)
-    emissions = np.sum(emissions_pft, axis = 0)
+    emissions = np.sum(emis_per_month, axis = 1)
+    if keep_time:
+        return emissions
+    emissions = np.sum(emissions, axis = 0)
     return emissions
 
 
@@ -125,15 +125,11 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, landCover_data)
 def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, landCover_data, monthly=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(emis_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(emis_data["time"]):
-                days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(emis_data["time"]):
             days_per_month.append(emis_data["time"][time+i+1]-emis_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     # Ignore division by zero warning. Returns inf.

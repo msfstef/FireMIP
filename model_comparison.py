@@ -32,10 +32,11 @@ def plot_present_emissions(table=True, pearson=False):
     mean will be printed to the console.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
+    spitfire_data = []
     gfed_data=[]
     years = range(1997,2013,1)
     for i in range(16):
@@ -55,16 +56,20 @@ def plot_present_emissions(table=True, pearson=False):
         inferno_data.append(inferno.get_global_emissions_yearly(297+i,
             inferno.emis_INFERNO, inferno.grid_INFERNO, 
             inferno.landmask_INFERNO, inferno.landCover_INFERNO))
+        spitfire_data.append(spitfire.get_global_emissions_yearly(297+i,
+            spitfire.emis_SPITFIRE, spitfire.grid_SPITFIRE))
+        
         
         gfed_data.append(gfed.get_global_emissions_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
     data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
-            blaze_data,orchidee_data,inferno_data]
+            blaze_data,orchidee_data,inferno_data,spitfire_data]
     
     multimodel_list = np.array(data_list[1:])
     multimodel_mean = np.mean(multimodel_list, axis=0)
     multimodel_std = np.std(multimodel_list, axis=0)
+    
     
     if table:
         print "\n \n"
@@ -140,10 +145,11 @@ def plot_present_burnt_area(table=True, pearson=False):
     mean will be printed to the console.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data,inferno_data = [],[],[]
+    spitfire_data = []
     gfed_data=[]
     years = range(1997,2013,1)
     for i in range(16):
@@ -163,12 +169,14 @@ def plot_present_burnt_area(table=True, pearson=False):
         inferno_data.append(inferno.get_global_BA_yearly(297+i,
             inferno.BA_INFERNO, inferno.grid_INFERNO, 
             inferno.landmask_INFERNO, inferno.landCover_INFERNO))
+        spitfire_data.append(spitfire.get_global_BA_yearly(297+i,
+            spitfire.BA_SPITFIRE, spitfire.grid_SPITFIRE))
         
         gfed_data.append(gfed.get_global_BA_yearly(i,
                         gfed.data_GFED,gfed.grid_GFED))
     
     data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
-            blaze_data,orchidee_data,inferno_data]
+            blaze_data,orchidee_data,inferno_data,spitfire_data]
     
     multimodel_list = np.array(data_list)
     multimodel_mean = np.mean(multimodel_list, axis=0)
@@ -250,10 +258,11 @@ def plot_present_fuel_consumption(table=True, pearson = False):
     mean will be printed to the console.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
+    spitfire_data = []
     gfed_data=[]
     years = range(1997,2013,1)
     for i in range(16):
@@ -279,12 +288,16 @@ def plot_present_fuel_consumption(table=True, pearson = False):
             inferno.emis_INFERNO, inferno.BA_INFERNO,
             inferno.grid_INFERNO,inferno.landmask_INFERNO,
             inferno.landCover_INFERNO))
+        spitfire_data.append(
+        spitfire.get_global_mean_FC_yearly_rough(297+i,
+            spitfire.emis_SPITFIRE, spitfire.BA_SPITFIRE,
+            spitfire.grid_SPITFIRE))
             
         gfed_data.append(gfed.get_global_mean_FC_yearly_rough(i,
                         gfed.data_GFED,gfed.grid_GFED))
 
     data_list = [gfed_data,jsbach_data,clm_data,ctem_data,
-            blaze_data,orchidee_data,inferno_data]
+            blaze_data,orchidee_data,inferno_data,spitfire_data]
     
     multimodel_list = np.array(data_list)
     multimodel_mean = np.mean(multimodel_list, axis=0)
@@ -348,7 +361,7 @@ def plot_present_fuel_consumption(table=True, pearson = False):
 
 #plot_present_burnt_area(True,True)
 #plot_present_fuel_consumption(True,True)
-#plot_present_emissions(True,True)
+#plot_present_emissions(False)
 
 
 #
@@ -376,10 +389,11 @@ def plot_past_emissions():
     the mean.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno']
+                'blaze', 'orchidee', 'inferno','spitfire']
     model_names = [label.upper() for label in model_list]
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
+    spitfire_data = []
     years = range(1700,1997,1)
     for i in range(len(years)):
         # Progress Bar
@@ -396,6 +410,8 @@ def plot_past_emissions():
         inferno_data.append(inferno.get_global_emissions_yearly(i,
             inferno.emis_INFERNO, inferno.grid_INFERNO, 
             inferno.landmask_INFERNO, inferno.landCover_INFERNO))
+        spitfire_data.append(spitfire.get_global_emissions_yearly(i,
+            spitfire.emis_SPITFIRE, spitfire.grid_SPITFIRE))
             
     for i in range(len(years[161:])):
         # Progress Bar
@@ -411,9 +427,11 @@ def plot_past_emissions():
     blaze_data_ma = movingaverage(blaze_data)    
     orchidee_data_ma = movingaverage(orchidee_data)
     inferno_data_ma = movingaverage(inferno_data)    
+    spitfire_data_ma = movingaverage(spitfire_data)
     
     data_list = [jsbach_data_ma,clm_data_ma,ctem_data_ma,
-        blaze_data_ma,orchidee_data_ma,inferno_data_ma]
+        blaze_data_ma,orchidee_data_ma,inferno_data_ma,
+        spitfire_data_ma]
     
     multimodel_list = np.array(data_list)                       
     multimodel_mean = np.nanmean(multimodel_list, axis=0)
@@ -450,6 +468,7 @@ def plot_past_burnt_area():
     """
     jsbach_data,clm_data,ctem_data = [],[],[]
     blaze_data,orchidee_data, inferno_data = [],[],[]
+    spitfire_data = []
     years = range(1700,1997,1)
     for i in range(len(years)):
         # Progress Bar
@@ -466,6 +485,8 @@ def plot_past_burnt_area():
         inferno_data.append(inferno.get_global_BA_yearly(i,
             inferno.BA_INFERNO, inferno.grid_INFERNO, 
             inferno.landmask_INFERNO, inferno.landCover_INFERNO))
+        spitfire_data.append(spitfire.get_global_BA_yearly(i,
+            spitfire.BA_SPITFIRE, spitfire.grid_SPITFIRE))
             
     for i in range(len(years[161:])):
         # Progress Bar
@@ -480,10 +501,12 @@ def plot_past_burnt_area():
     ctem_data_ma = np.concatenate((empty,movingaverage(ctem_data)))
     blaze_data_ma = movingaverage(blaze_data)    
     orchidee_data_ma = movingaverage(orchidee_data)
-    inferno_data_ma = movingaverage(inferno_data)    
+    inferno_data_ma = movingaverage(inferno_data)
+    spitfire_data_ma = movingaverage(spitfire_data)
     
     data_list = [jsbach_data_ma,clm_data_ma,ctem_data_ma,
-        blaze_data_ma,orchidee_data_ma,inferno_data_ma]
+        blaze_data_ma,orchidee_data_ma,inferno_data_ma,
+        spitfire_data_ma]
     
     multimodel_list = np.array(data_list)
     multimodel_mean = np.nanmean(multimodel_list, axis=0)

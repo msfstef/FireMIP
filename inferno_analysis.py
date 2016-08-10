@@ -21,7 +21,7 @@ landCover_INFERNO = Dataset('../../model_data/Inferno_S1_LandCoverFrac.nc',
 #
 
 def get_grid_burnt_area(year, month_period, BA_data, 
-                    grid_data, landmask, landCover_data):
+                    grid_data, landmask, landCover_data, keep_time=False):
     np.seterr(over='ignore')
     time = int(year*12)
     sec_per_month = []
@@ -45,7 +45,9 @@ def get_grid_burnt_area(year, month_period, BA_data,
     actual_BA = np.multiply(BA, actual_landCover_data)
     actual_BA = np.multiply(actual_BA, sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
     burnt_area_data = np.multiply(actual_BA, grid_data["cell_area"])
-    burnt_area_data = np.sum(burnt_area_data, axis=0)
+    burnt_area_data = np.sum(burnt_area_data, axis=1)
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
     
@@ -85,7 +87,7 @@ def plot_global_BA_yearly(no_years, BA_data,
 #
                     
 def get_grid_emissions(year_start, month_period, 
-                    emis_data, grid_data, landmask, landCover_data):
+                    emis_data, grid_data, landmask, landCover_data, keep_time=False):
     time = int(year_start*12)
     sec_per_month = []
     for i in range(month_period):
@@ -110,8 +112,10 @@ def get_grid_emissions(year_start, month_period,
     emis_rate_data = np.multiply(emis_data["fFirepft"][time:time + month_period], complete_area_data)
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis, np.newaxis])
-    emissions_pft = np.sum(emis_per_month, axis = 0)
-    emissions = np.sum(emissions_pft, axis = 0)
+    emissions = np.sum(emis_per_month, axis = 1)
+    if keep_time:
+        return emissions
+    emissions = np.sum(emissions, axis = 0)
     return emissions
     
 def get_global_emissions_yearly(year, emis_data, grid_data, landmask, landCover_data):

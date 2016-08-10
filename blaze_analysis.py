@@ -20,11 +20,13 @@ time_data = Dataset('../../model_data/JSBACH_SF1_fFirepft.nc',
 # Burnt Area Analysis
 #
 
-def get_grid_burnt_area(year, month_period, BA_data, grid_data):
+def get_grid_burnt_area(year, month_period, BA_data, grid_data, keep_time=False):
     BA = BA_data["BA."][year*12:year*12+month_period]
     BA = np.divide(BA, 100.)
     
     burnt_area_data = np.multiply(BA, grid_data["cell_area"])
+    if keep_time:
+        return burnt_area_data
     burnt_area_data = np.sum(burnt_area_data, axis=0)
     return burnt_area_data
     
@@ -62,18 +64,15 @@ def plot_global_BA_yearly(no_years, BA_data, grid_data):
 #
 
 
-def get_grid_emissions(year_start, month_period, emis_data, grid_data, time_data):
+def get_grid_emissions(year_start, month_period, emis_data, grid_data,
+                     time_data, keep_time=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(time_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(time_data["time"]):
-                days_per_month.append(time_data["time"][time+i+1]-time_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(time_data["time"]):
             days_per_month.append(time_data["time"][time+i+1]-time_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     # Ignore overflow warning.
@@ -81,6 +80,8 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data, time_data
     emis_rate_data = np.multiply(emis_data["Cfire.monthly"][time:time+month_period], grid_data["cell_area"])
     emis_per_month = np.multiply(emis_rate_data, 
                 sec_per_month[:, np.newaxis, np.newaxis])
+    if keep_time:
+        return emis_per_month
     emissions = np.sum(emis_per_month, axis = 0)
     return emissions
 
@@ -118,15 +119,11 @@ def plot_global_emissions_yearly(no_years, emis_data, grid_data, time_data):
 def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time_data, monthly=False):
     time = int(year_start*12)
     days_per_month = []
-    if (time+12) == len(time_data["time"]):
-        for i in range(month_period):
-            if time+i+1 < len(time_data["time"]):
-                days_per_month.append(time_data["time"][time+i+1]-time_data["time"][time+i])
-            else:
-                days_per_month.append(31)
-    else:
-        for i in range(month_period):
+    for i in range(month_period):
+        if time+i+1 < len(time_data["time"]):
             days_per_month.append(time_data["time"][time+i+1]-time_data["time"][time+i])
+        else:
+            days_per_month.append(31)
     sec_per_month = np.multiply(days_per_month, 86400)
     
     
