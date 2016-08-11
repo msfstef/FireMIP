@@ -196,12 +196,15 @@ def calc_mean_dev_total(model, region=0):
     return (mean_dev, stderr_dev)
 
 
-def plot_bar_chart(model='all'):
+def plot_bar_chart(model='all', save=False):
     """
     Plots a bar chart of relative deviations for each
     region for the given model/s. To plot all models
     together, leave the argument model as 'all', which
     is the default setting.
+    
+    Argument save is set to False by default. Used by the
+    generate_figures module.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno','spitfire']
@@ -209,8 +212,9 @@ def plot_bar_chart(model='all'):
     region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
                    'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
     no_obs_list = []
-    #model_list=['jsbach','ctem','clm']
-    fig, ax = plt.subplots()
+    
+    fig, ax = plt.subplots(figsize=(14,10))
+    
     error_config = {'ecolor': '0.3'}
     no_of_bars = len(region_names)
     ind = np.arange(no_of_bars)*2
@@ -220,7 +224,8 @@ def plot_bar_chart(model='all'):
         model_list=[model]
         bar_width = 1.
         center = 0.5
-        
+     
+    highest=[]
     for i in range(len(model_list)):
         # Progress Bar
         print("%.2f" % (float(i)/(len(model_list)-1)))
@@ -239,12 +244,15 @@ def plot_bar_chart(model='all'):
             else:
                 dev = calc_mean_dev_points(model_name,
                                             region=j)
+            
             means.append(dev[0])
             stderrs.append(dev[1])
         
         ax.bar(ind+i*bar_width,means,bar_width,
              color=colour,yerr=stderrs, 
              error_kw=error_config,label=model_name.upper())
+        
+        highest.append(np.max(means))
     
     
     xticks = [region + '\n' + str(no_obs) for region,no_obs in
@@ -255,16 +263,18 @@ def plot_bar_chart(model='all'):
     ax.set_ylabel('Mean Relative Deviation (%)')
     ax.set_xticks(ind+center)
     ax.set_xticklabels(xticks)
+    ax.set_xlim([np.min(ind)-.5,np.max(ind)+bar_width*len(model_list)+.5])
+    ax.set_ylim([-100.,np.max(highest)*1.1])
     ax.legend(ncol=2)
+    plt.tight_layout()
     
-    plt.show()
-    
-     
+    if save:
+        return fig
+    else:
+        plt.show()
+
+
 #plot_bar_chart()
 #print calc_mean_dev_points('orchidee',11,True)
 #print calc_mean_dev_total('clm',12)
-model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno','spitfire']
-#for model in model_list:
-#    print calc_mean_dev_points(model,11,True)
 

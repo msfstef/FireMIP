@@ -27,9 +27,10 @@ def plot_time_series(year, year_period, var, region=0, model='all',
     can be specified to plot only that model's time series.
     
     The arguments means, corr_gfed, and corr_multimodel determine whether
-    tables of means, temporal correlations with GFED, and temporal correlations
-    with the multimodel mean will be saved respectively. They are set to
-    False by default to not bloat the folder in which they are saved.
+    tables of means, temporal correlations with GFED, and temporal
+    correlations with the multimodel mean will be saved respectively. 
+    They are set to False by default to not bloat the folder in which 
+    they are saved.
     
     The argument all_regions can be set to True to create a plot consisting
     of multiple subplots for all individual regions.

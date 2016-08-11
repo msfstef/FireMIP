@@ -494,7 +494,7 @@ def load_var_grid(year, year_period, model, var='FC',
 
 
 def plot_map(year, year_period, model, var='FC', 
-         region=0, reg_type='boxes', binned=False, save=False):
+         region=0, reg_type='boxes', binned=True, save=False):
     """
     Year is in absolute terms, e.g. 1997.
     
@@ -524,8 +524,9 @@ def plot_map(year, year_period, model, var='FC',
     For details regarding the GFED regions, go to 
     http://www.globalfiredata.org/data.html.
     
-    If binned is set to True, the map will be plotted with binned values
-    and a discrete colorbar following the GFED bin convention.
+    If binned is set to False, the map will be plotted with an automatic
+    range for the colorbar. If left to the default, the binning convention 
+    used by GFED will be used.
     """
     if reg_type=='boxes':
         region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
@@ -632,7 +633,7 @@ def plot_map(year, year_period, model, var='FC',
                     grid[index] = bin
     
     
-    fig=plt.figure()
+    fig=plt.figure(figsize=(14,10))
     m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
     urcrnrlon=180,urcrnrlat=90)
     m.drawcoastlines()
@@ -782,11 +783,12 @@ def plot_multimodel_box(year, year_period, var='FC',
                 flat_grid = np.divide(flat_grid, year_period)
             data.append(flat_grid)
     else:
-        x_labels = region_names[1:]
-        title_end = model
-        for region in range(1,len(region_names)):
-            grid = get_regional_var_grid(year, year_period, 
-                                       region, model, var, reg_type)
+        x_labels = region_names
+        title_end = model.upper()
+        grid_list = get_regional_var_grid(year, year_period, 
+                              region, model, var, reg_type,
+                              all_regions=True)
+        for grid in grid_list:
             flat_grid = grid[grid > 0]
             if var!='FC':
                 flat_grid = np.divide(flat_grid, year_period)
@@ -803,7 +805,7 @@ def plot_multimodel_box(year, year_period, var='FC',
         # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned per Year)'
    
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12,8))
     plt.boxplot(data, showmeans=True, whis=[5,95], sym='', 
                 labels = x_labels)
     plt.ylabel(title +' '+ units)
@@ -815,8 +817,8 @@ def plot_multimodel_box(year, year_period, var='FC',
         plt.show()
 
 
-#plot_map(1997,15,'spitfire', 'FC', binned=True)
-#plot_multimodel_box(1997,15,'FC', model='spitfire')
+#plot_map(1997,15,'blaze', 'FC', binned=True)
+#plot_multimodel_box(1997,15,'FC', model='blaze')
 #plot_spatial_histogram(1997, 15, 'ctem', var='FC')
 
 
@@ -927,17 +929,22 @@ def get_spatial_correlations(year, year_period, var):
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno','spitfire']
+    model_names = [label.upper() for label in model_list]
     pearson_list = []
     for model in model_list[1:]:
         pearson = calc_spatial_correlation(year,year_period,model,var)
         pearson_list.append(pearson)
     
-    print('Table of Correlations for '+var+' for '+
-            str(year)+'-'+str(year+year_period-1))
-    print('===========================================')
-    for i in range(len(pearson_list)):
-        print(model_list[i+1].upper()+': '+str(pearson_list[i]))
-    return pearson_list
+    corrval = np.array([corr[0] for corr in pearson_list])
+    pval = np.array([corr[1] for corr in pearson_list])
+    table_data = np.array([model_names[1:], corrval, pval])
+    f = open("./figures/spatial_comparison/"+
+             "GFED_spatial_correlations_table_"+var+
+        +"_"+str(year)+"-"+str(year+year_period-1)+".csv", "w")
+    f.write("Table of Spatial Pearson Correlations of "+title+
+       " with GFED for "+str(year)+"-"+str(year+year_period-1)+"\n")
+        f.write("Model Name,Pearson's r,p-value\n")
+        np.savetxt(f, table_data.T, delimiter=',', fmt='%s')
 
 
 def plot_diff_map(year, year_period, model, var, 
@@ -995,7 +1002,7 @@ def plot_diff_map(year, year_period, model, var,
                 if bin != 'nan':    
                     diff_grid[index] = bin
     
-    fig=plt.figure()
+    fig=plt.figure(figsize=(14,10))
     m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
         urcrnrlon=180,urcrnrlat=90)
     m.drawcoastlines()
@@ -1050,7 +1057,7 @@ def interp_std_func(model, var, year, year_period,
     
     
 def plot_std_map(year, year_period, var='FC', method='nearest',
-                 ref_grid='gfed', binned='True'):
+                 ref_grid='gfed', binned='True', save=False):
     model_list = ['jsbach', 'clm', 'blaze', 
                     'orchidee', 'inferno','ctem',
                     'spitfire']
@@ -1112,7 +1119,7 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
         # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned per Year)'
     
-    fig=plt.figure()
+    fig=plt.figure(figsize=(14,10))
     m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
         urcrnrlon=180,urcrnrlat=90)
     m.drawcoastlines()
@@ -1128,7 +1135,10 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
     else:
         cb=m.colorbar(cs, "bottom")
     cb.set_label('Standard Deviation '+units)
-    plt.show()
+    if save:
+        return fig
+    else:
+        plt.show()
 
 
 

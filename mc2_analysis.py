@@ -245,7 +245,7 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
     lons = grid_data["longitude"]
     lons, lats = np.meshgrid(lons, lats)
 
-    binned=False
+    binned=True
     if binned:
             ticks=[0.,.005,.01,.02,.05,.1,.2,.5,1.,'>5.0']
             bounds=[0,1,2,3,4,5,6,7,8,9]
@@ -286,10 +286,9 @@ def plot_map_period(year_start, year_period, emis_data, grid_data):
     else:
         cb=m.colorbar(cs, "bottom")
     cb.set_label("kg C per m^2")
-    plt.title("Total Emissions 2000-2012, MC2")
+    plt.title("Total Emissions 1997-2008, MC2")
     plt.show()
-    
 
-#plot_map_period(100,12,emis_MC2, grid_MC2)    
+#plot_map_period(96,12,emis_MC2, grid_MC2)    
 #plot_global_emissions_yearly(20, emis_MC2, grid_MC2)
 #print get_global_emissions_yearly(101, emis_MC2, grid_MC2)
