@@ -189,7 +189,7 @@ def generate_field_observations_histogram():
     outputs of fuel consumption from field observations
     taken from the van Leeuwen et al (2014) paper.
     """
-    fig = field_obv.plot_bar_chart(save=True)
+    fig = field_obs.plot_bar_chart(save=True)
     fig.savefig('./figures/spatial_comparison/'+
           'field_observations_deviations.png')
     plt.close(fig)
@@ -208,4 +208,4 @@ def generate_multimodel_plots():
     generate_field_observations_histogram()
     print '~Multimodel Plots Generated~'
 
-
+#generate_multimodel_plots()

@@ -18,6 +18,7 @@ import blaze_analysis as blaze
 import orchidee_analysis as orchidee
 import inferno_analysis as inferno
 import spitfire_analysis as spitfire
+import mc2_analysis as mc2
 import globfirm_analysis as globfirm
 
 import gfed_analysis as gfed
@@ -149,6 +150,18 @@ def get_lons_lats(model, standard=True):
         lats = np.array(lats)
         lons = np.array(lons)
         lon_shift = 0.
+    elif model=='mc2':
+        lats = mc2.grid_MC2["latitude"]
+        lons = mc2.grid_MC2["longitude"]
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = 0
+    elif model=='globfirm':
+        lats = globfirm.grid_GLOBFIRM["latitude"]
+        lons = globfirm.grid_GLOBFIRM["longitude"]
+        lats = np.array(lats)
+        lons = np.array(lons)
+        lon_shift = 0
         
     if standard:
         return lons, lats
@@ -264,6 +277,7 @@ def load_var_grid(year, year_period, model, var='FC',
     """
     year_adj = year-1700
     year_ctem = year-1861
+    year_mc2 = year - 1901
     year_gfed = year-1997
     if var == 'FC':
         if model == 'gfed':
@@ -305,7 +319,12 @@ def load_var_grid(year, year_period, model, var='FC',
         elif model == 'spitfire':
             grid = spitfire.get_grid_fuel_consumption(year_adj, year_period*12,
                     spitfire.emis_SPITFIRE,spitfire.BA_SPITFIRE)
-            
+        elif model == 'mc2':
+            grid = mc2.get_grid_fuel_consumption(year_mc2, year_period,
+                    mc2.emis_MC2,mc2.BA_MC2)
+        elif model == 'globfirm':
+            grid = globfirm.get_grid_fuel_consumption(year_adj, year_period,
+                    globfirm.emis_GLOBFIRM,globfirm.BA_GLOBFIRM)
     elif var == 'emis':
         if model == 'gfed':
             grid = gfed.get_grid_emissions(year_gfed,year_period*12,
@@ -397,7 +416,20 @@ def load_var_grid(year, year_period, model, var='FC',
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, spitfire.grid_SPITFIRE["cell_area"])
-                
+        elif model == 'mc2':
+            grid = mc2.get_grid_emissions(year_mc2, year_period,
+                    mc2.emis_MC2,mc2.grid_MC2, keep_time = keep_time)
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, mc2.grid_MC2["cell_area"])
+        elif model == 'globfirm':
+            grid = globfirm.get_grid_emissions(year_adj, year_period,
+                    globfirm.emis_GLOBFIRM,globfirm.grid_GLOBFIRM,
+                    keep_time=keep_time)            
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, globfirm.grid_GLOBFIRM["cell_area"])
+        
     elif var == 'BA':
         if model == 'gfed':
             grid = gfed.get_grid_burnt_area(year_gfed,year_period*12,
@@ -489,7 +521,20 @@ def load_var_grid(year, year_period, model, var='FC',
             # Convert to per m^2 units if output is for map.
             if per_area:
                 grid = np.divide(grid, spitfire.grid_SPITFIRE["cell_area"])
-                     
+        elif model == 'mc2':
+            grid = mc2.get_grid_burnt_area(year_mc2, year_period,
+                    mc2.BA_MC2,mc2.grid_MC2, keep_time = keep_time)
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, mc2.grid_MC2["cell_area"])
+        elif model == 'globfirm':
+            grid = globfirm.get_grid_burnt_area(year_adj, year_period,
+                    globfirm.BA_GLOBFIRM,globfirm.grid_GLOBFIRM,
+                    keep_time=keep_time)            
+            # Convert to per m^2 units if output is for map.
+            if per_area:
+                grid = np.divide(grid, globfirm.grid_GLOBFIRM["cell_area"])
+                            
     return grid
 
 
@@ -535,7 +580,15 @@ def plot_map(year, year_period, model, var='FC',
         region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
                         'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
                         'SEAS','EQAS','AUST']
-                
+    
+    # Exception for MC2, goes up to 2008.
+    if model=='mc2':
+        lst_yr = year+year_period
+        if lst_yr > 2008 and year<=2008:
+            year_period = 2008-year+1
+        elif year>2008:
+            return 'No data for given time period.'            
+    
     grid = load_var_grid(year, year_period, model, var)
     if region != 0:
         grid = get_regional_var_grid(year, year_period, region, 
@@ -545,6 +598,7 @@ def plot_map(year, year_period, model, var='FC',
     grid[grid==0]=np.nan
     if var != 'FC':
         grid = np.divide(grid, year_period)
+                
     
     if var == 'FC':
         title = 'Fuel Consumption'
@@ -694,6 +748,14 @@ def plot_spatial_histogram(year, year_period, model,
         region_names = ['Global','BONA','TENA','CEAM','NHSA','SHSA',
                         'EURO','MIDE','NHAF','SHAF','BOAS','CEAS',
                         'SEAS','EQAS','AUST']
+    
+    # Exception for MC2, goes up to 2008.
+    if model=='mc2':
+        lst_yr = year+year_period
+        if lst_yr > 2008 and year<=2008:
+            year_period = 2008-year+1
+        elif year>2008:
+            return 'No data for given time period.'
                 
     grid = load_var_grid(year, year_period, model, var)
     if region != 0:
@@ -767,9 +829,20 @@ def plot_multimodel_box(year, year_period, var='FC',
                         'SEAS','EQAS','AUST']
                         
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']
+                'blaze', 'orchidee', 'inferno', 'spitfire',
+                 'globfirm','mc2']
     model_names = [label.upper() for label in model_list]            
-    data=[]              
+    data=[]
+    
+    # Exception for MC2, goes up to 2008.
+    if model=='mc2':
+        lst_yr = year+year_period
+        if lst_yr > 2008 and year<=2008:
+            year_period = 2008-year+1
+        elif year>2008:
+            return 'No data for given time period.'
+            
+    
     if model=='all':     
         x_labels = model_names
         title_end = region_names[region]
@@ -817,9 +890,9 @@ def plot_multimodel_box(year, year_period, var='FC',
         plt.show()
 
 
-#plot_map(1997,15,'blaze', 'FC', binned=True)
-#plot_multimodel_box(1997,15,'FC', model='blaze')
-#plot_spatial_histogram(1997, 15, 'ctem', var='FC')
+#plot_map(1997,16,'globfirm', 'BA', binned=True)
+#plot_multimodel_box(1997,16,'FC',model='mc2')
+#plot_spatial_histogram(1997, 16, 'globfirm', var='FC')
 
 
 #
@@ -905,6 +978,15 @@ def calc_spatial_correlation(year, year_period, model, var):
     GFED_grid = interp_GFED_grid(year,year_period,model,var)
     model_grid = load_var_grid(year,year_period,model,var)
     
+    # Exception for MC2, goes up to 2008.
+    if model=='mc2':
+        lst_yr = year+year_period
+        if lst_yr > 2008 and year<=2008:
+            model_grid = np.divide(model_grid, 2008-year+1)
+            GFED_grid = np.divide(GFED_grid, year_period)
+        elif year>2008:
+            return 'No data for given time period.'
+    
     GFED_flat = GFED_grid.flatten()
     model_flat = model_grid.flatten()
     
@@ -928,7 +1010,8 @@ def get_spatial_correlations(year, year_period, var):
     metric/observations.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno','spitfire']
+                'blaze', 'orchidee', 'inferno','spitfire',
+                 'mc2','globfirm']
     model_names = [label.upper() for label in model_list]
     pearson_list = []
     for model in model_list[1:]:
@@ -940,11 +1023,11 @@ def get_spatial_correlations(year, year_period, var):
     table_data = np.array([model_names[1:], corrval, pval])
     f = open("./figures/spatial_comparison/"+
              "GFED_spatial_correlations_table_"+var+
-        +"_"+str(year)+"-"+str(year+year_period-1)+".csv", "w")
-    f.write("Table of Spatial Pearson Correlations of "+title+
+            "_"+str(year)+"-"+str(year+year_period-1)+".csv", "w")
+    f.write("Table of Spatial Pearson Correlations of "+var+
        " with GFED for "+str(year)+"-"+str(year+year_period-1)+"\n")
-        f.write("Model Name,Pearson's r,p-value\n")
-        np.savetxt(f, table_data.T, delimiter=',', fmt='%s')
+    f.write("Model Name,Pearson's r,p-value\n")
+    np.savetxt(f, table_data.T, delimiter=',', fmt='%s')
 
 
 def plot_diff_map(year, year_period, model, var, 
@@ -979,28 +1062,28 @@ def plot_diff_map(year, year_period, model, var,
     diff_grid = np.multiply(diff_grid, 100)
     
     if binned:
-            ticks=[-100,-50,0,50,100,150,200,300,'>500']
-            bounds=[-120,-60,0,20,40,60,80,100,120]
-            for index,value in np.ndenumerate(diff_grid):
-                bin = 'nan'
-                if -100<=value<-50:
-                    bin = bounds[0]
-                elif -50<=value<0:
-                    bin = bounds[1]
-                elif 0<=value<50:
-                    bin = bounds[2]
-                elif 50<=value<100:
-                    bin = bounds[3]
-                elif 100<=value<150:
-                    bin = bounds[4]
-                elif 150<=value<200:
-                    bin = bounds[5]
-                elif 200<=value<300:
-                    bin = bounds[6]
-                elif 300<=value:
-                    bin = bounds[7]
-                if bin != 'nan':    
-                    diff_grid[index] = bin
+        ticks=[-100,-50,0,50,100,150,200,300,'>500']
+        bounds=[-120,-60,0,20,40,60,80,100,120]
+        for index,value in np.ndenumerate(diff_grid):
+            bin = 'nan'
+            if -100<=value<-50:
+                bin = bounds[0]
+            elif -50<=value<0:
+                bin = bounds[1]
+            elif 0<=value<50:
+                bin = bounds[2]
+            elif 50<=value<100:
+                bin = bounds[3]
+            elif 100<=value<150:
+                bin = bounds[4]
+            elif 150<=value<200:
+                bin = bounds[5]
+            elif 200<=value<300:
+                bin = bounds[6]
+            elif 300<=value:
+                bin = bounds[7]
+            if bin != 'nan':    
+                diff_grid[index] = bin
     
     fig=plt.figure(figsize=(14,10))
     m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
@@ -1060,7 +1143,7 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
                  ref_grid='gfed', binned='True', save=False):
     model_list = ['jsbach', 'clm', 'blaze', 
                     'orchidee', 'inferno','ctem',
-                    'spitfire']
+                    'spitfire', 'mc2','globfirm']
     grid_list = []
     if ref_grid=='gfed':
         print 'Using GFED resolution.'
@@ -1075,6 +1158,16 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
         model_grid=interp_std_func(model, var, year, year_period, 
                                       method, ref_grid)
         model_grid = np.array(model_grid)
+        if var != 'FC':
+            # Exception for MC2, goes up to 2008.
+            if model=='mc2':
+                lst_yr = year+year_period
+                if lst_yr > 2008 and year<=2008:
+                    model_grid = np.divide(model_grid, 2008-year+1)
+                elif year>2008:
+                    return 'No data for given time period.'
+            else:
+                model_grid = np.divide(model_grid, year_period)
         grid_list.append(model_grid)
         
     grid_list = np.array(grid_list)
@@ -1114,11 +1207,61 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
     elif var == 'emis':
         title = 'Carbon Emissions'
         units = '($kg\, C\, m^{-2} \, year^{-1}$)'
+        if binned:
+            ticks=[0,0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,'>0.4']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(std_grid):
+                bin = 'nan'
+                if 0.<value<0.01:
+                    bin = 0
+                elif 0.01<=value<0.05:
+                    bin = 1
+                elif 0.05<=value<0.1:
+                    bin = 2
+                elif 0.1<=value<0.15:
+                    bin = 3
+                elif 0.15<=value<0.2:
+                    bin = 4
+                elif 0.2<=value<0.25:
+                    bin = 5
+                elif 0.25<=value<0.3:
+                    bin = 6
+                elif 0.35<=value<0.4:
+                    bin = 7
+                elif 0.4<=value:
+                    bin = 8
+                if bin != 'nan':
+                    std_grid[index] = bin
     elif var == 'BA':
         title = 'Burnt Area'
         # Due to recurring fires in <year, not normalised.
         units = '(Fraction Burned per Year)'
-    
+        if binned:
+            ticks=[0,0.01,0.05,0.1,0.2,0.3,0.5,0.7,1,'>2.0']
+            bounds=[0,1,2,3,4,5,6,7,8,9]
+            for index,value in np.ndenumerate(std_grid):
+                bin = 'nan'
+                if 0.<value<0.01:
+                    bin = 0
+                elif 0.01<=value<0.05:
+                    bin = 1
+                elif 0.05<=value<0.1:
+                    bin = 2
+                elif 0.1<=value<0.2:
+                    bin = 3
+                elif 0.2<=value<0.3:
+                    bin = 4
+                elif 0.3<=value<0.5:
+                    bin = 5
+                elif 0.5<=value<0.7:
+                    bin = 6
+                elif 0.7<=value<1.:
+                    bin = 7
+                elif 1.<=value:
+                    bin = 8
+                if bin != 'nan':
+                    std_grid[index] = bin
+        
     fig=plt.figure(figsize=(14,10))
     m = Basemap(llcrnrlon=-180,llcrnrlat=-90, 
         urcrnrlon=180,urcrnrlat=90)
@@ -1142,7 +1285,7 @@ def plot_std_map(year, year_period, var='FC', method='nearest',
 
 
 
-#get_spatial_correlations(1997,15,'FC')
-#plot_diff_map(1997,15,'spitfire','FC')
-#plot_std_map(1997,15,ref_grid='ctem')
+#get_spatial_correlations(1997,16,'FC')
+#plot_diff_map(1997,16,'spitfire','FC')
+#plot_std_map(1997,16,var='FC', binned=True)
 

@@ -207,7 +207,8 @@ def plot_bar_chart(model='all', save=False):
     generate_figures module.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno','spitfire']
+                'blaze', 'orchidee', 'inferno','spitfire',
+                 'mc2','globfirm']
     colour_map=iter(plt.cm.Dark2(np.linspace(0,1,len(model_list))))
     region_names = ['Global','BONA','TENA','EQCSA','SOMA','NOEU',
                    'MEME','EQAF','SOAF','BOAS','CEAS','EQAS','AUST']
@@ -218,7 +219,7 @@ def plot_bar_chart(model='all', save=False):
     error_config = {'ecolor': '0.3'}
     no_of_bars = len(region_names)
     ind = np.arange(no_of_bars)*2
-    bar_width = 0.20
+    bar_width = 0.15
     center = 0.7
     if model != 'all':
         model_list=[model]

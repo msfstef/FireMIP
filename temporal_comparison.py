@@ -39,7 +39,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
     to False by default.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']       
+                'blaze', 'orchidee', 'inferno', 'spitfire']  
+    model_list = ['jsbach','ctem','mc2','globfirm']  
     if model != 'all':
         model_list = [model]
     model_names = [label.upper() for label in model_list] 
@@ -108,8 +109,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
     if len(model_list)>1 and not all_regions:
         fig = plt.figure(figsize=(12,8))
         multimodel_list = np.array(data_list[1:])
-        multimodel_mean = np.mean(multimodel_list, axis=0)
-        multimodel_std = np.std(multimodel_list, axis=0)
+        multimodel_mean = np.nanmean(multimodel_list, axis=0)
+        multimodel_std = np.nanstd(multimodel_list, axis=0)
         
         title_end = region_names[region]
         colour_map=iter(plt.cm.Dark2(
@@ -135,8 +136,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
         plt.xlabel('Year')
         plt.xlim([np.min(years),np.max(years)])  
         plt.ylabel(title +' '+ units)
-        plt.ylim([np.min(np.array(data_list)/unit_conv)*0.80, 
-                np.max(np.array(data_list)/unit_conv)*1.20])
+        plt.ylim([np.nanmin(np.array(data_list)/unit_conv)*0.80, 
+                np.nanmax(np.array(data_list)/unit_conv)*1.20])
         plt.title('Yearly Mean of '+title+' for '+str(year)+
             '-'+str(year+year_period-1)+', '+title_end)
         plt.legend(ncol=3)
@@ -149,8 +150,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
         plt.xlabel('Year')
         plt.xlim([np.min(years),np.max(years)])  
         plt.ylabel(title +' '+ units)
-        plt.ylim([np.min(np.array(data_list)/unit_conv)*0.80, 
-                np.max(np.array(data_list)/unit_conv)*1.20])
+        plt.ylim([np.nanmin(np.array(data_list)/unit_conv)*0.80, 
+                np.nanmax(np.array(data_list)/unit_conv)*1.20])
         plt.title('Yearly Mean of '+title+' for '+str(year)+
             '-'+str(year+year_period-1)+', '+title_end)
         plt.legend(ncol=3)
@@ -174,8 +175,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
             data=data_list[:,:,region]
             
             multimodel_list = np.array(data[1:])
-            multimodel_mean = np.mean(multimodel_list, axis=0)
-            multimodel_std = np.std(multimodel_list, axis=0)
+            multimodel_mean = np.nanmean(multimodel_list, axis=0)
+            multimodel_std = np.nanstd(multimodel_list, axis=0)
 
             colour_map=iter(plt.cm.Dark2(
                 np.linspace(0,1,len(multimodel_list))))
@@ -198,24 +199,24 @@ def plot_time_series(year, year_period, var, region=0, model='all',
             ax.set_xlim([np.min(years),np.max(years)])  
 
             if region==0:
-                ax.set_ylim([np.min(np.array(data)/unit_conv)*0.50, 
-                   np.max(np.array(data)/unit_conv)*1.50])
+                ax.set_ylim([np.nanmin(np.array(data)/unit_conv)*0.50, 
+                   np.nanmax(np.array(data)/unit_conv)*1.50])
                 ax.set_ylabel(title +' '+ units)
                 ax.set_title('Yearly Mean of '+title+' for '+str(year)+
                  '-'+str(year+year_period-1)+', Global + All Regions')
                 ax.legend(ncol=3)
             elif np.mod(region,4)!=0:
                 ax.set_xticklabels([])
-                ax.set_ylim([np.min(np.array(data)/unit_conv)*0.80, 
-                   np.max(np.array(data)/unit_conv)*1.20])
+                ax.set_ylim([np.nanmin(np.array(data)/unit_conv)*0.80, 
+                   np.nanmax(np.array(data)/unit_conv)*1.20])
                 start, end = ax.get_ylim()
                 ax.yaxis.set_ticks(np.linspace(start, end,4))
                 ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
                 ax.set_title(region_names[region])
             else:
                 ax.set_xlabel('Year')
-                ax.set_ylim([np.min(np.array(data)/unit_conv)*0.80, 
-                   np.max(np.array(data)/unit_conv)*1.20])
+                ax.set_ylim([np.nanmin(np.array(data)/unit_conv)*0.80, 
+                   np.nanmax(np.array(data)/unit_conv)*1.20])
                 start, end = ax.get_ylim()
                 ax.yaxis.set_ticks(np.linspace(start, end,4))
                 ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
@@ -256,11 +257,11 @@ def save_table(data, year, year_period, var, region, model_list,
         unit_conv=1e12
     
     if means:
-        means = np.mean(data, axis=1)/unit_conv
-        std = np.std(data, axis=1)/unit_conv
+        means = np.nanmean(data, axis=1)/unit_conv
+        std = np.nanstd(data, axis=1)/unit_conv
         table_data = np.array([model_names, means, std])
         f = open("./figures/temporal_comparison/means_table_"+var+
-                +"_"+str(year)+"-"+str(year+year_period-1)+"_"+
+                "_"+str(year)+"-"+str(year+year_period-1)+"_"+
                 region_names[region]+".csv", "w")
         f.write("Table of Mean Yearly "+title+" for "+str(year)+"-"+
                 str(year+year_period-1)+" ~ "+region_names[region]+"\n")
@@ -276,7 +277,7 @@ def save_table(data, year, year_period, var, region, model_list,
         table_data = np.array([model_names[1:], corrval, pval])
         f = open("./figures/temporal_comparison/"+
                 "GFED_correlations_table_"+var+
-                +"_"+str(year)+"-"+str(year+year_period-1)+"_"+
+                "_"+str(year)+"-"+str(year+year_period-1)+"_"+
                 region_names[region]+".csv", "w")
         f.write("Table of Temporal Pearson Correlations of "+title+
                 " with GFED for "+str(year)+"-"+str(year+year_period-1)+" ~ "
@@ -294,7 +295,7 @@ def save_table(data, year, year_period, var, region, model_list,
         table_data = np.array([model_names, corrval, pval])
         f = open("./figures/temporal_comparison/"+
                 "multimodel_correlations_table_"+var+
-                +"_"+str(year)+"-"+str(year+year_period-1)+"_"+
+                "_"+str(year)+"-"+str(year+year_period-1)+"_"+
                 region_names[region]+".csv", "w")
         f.write("Table of Temporal Pearson Correlations of "+title+
                 " with the Multimodel Mean for "+str(year)+"-"+
@@ -304,5 +305,5 @@ def save_table(data, year, year_period, var, region, model_list,
         print 'Multimodel Correlations table finished!'
 
 
-#plot_time_series(1997,16,'emis',all_regions=True)
+#plot_time_series(1997,16,'FC')
             
