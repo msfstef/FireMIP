@@ -253,7 +253,7 @@ def plot_bar_chart(model='all', save=False):
              color=colour,yerr=stderrs, 
              error_kw=error_config,label=model_name.upper())
         
-        highest.append(np.max(means))
+        highest.append(np.nanmax(means))
     
     
     xticks = [region + '\n' + str(no_obs) for region,no_obs in
@@ -265,7 +265,7 @@ def plot_bar_chart(model='all', save=False):
     ax.set_xticks(ind+center)
     ax.set_xticklabels(xticks)
     ax.set_xlim([np.min(ind)-.5,np.max(ind)+bar_width*len(model_list)+.5])
-    ax.set_ylim([-100.,np.max(highest)*1.1])
+    ax.set_ylim([-100.,np.nanmax(highest)*1.1])
     ax.legend(ncol=2)
     plt.tight_layout()
     

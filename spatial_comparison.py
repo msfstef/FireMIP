@@ -58,7 +58,7 @@ def create_box_regions(lons,lats):
         else:
             if 45.<=lat<90.:
                 regions[index]=9
-            elif 20.<=lat<50.:
+            elif 20.<=lat<45.:
                 regions[index]=10
             elif -10.<=lat<20.:
                 regions[index]=11
@@ -830,7 +830,7 @@ def plot_multimodel_box(year, year_period, var='FC',
                         
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
                 'blaze', 'orchidee', 'inferno', 'spitfire',
-                 'globfirm','mc2']
+                 'mc2','globfirm']
     model_names = [label.upper() for label in model_list]            
     data=[]
     
@@ -1052,6 +1052,9 @@ def plot_diff_map(year, year_period, model, var,
     It is suggested that bins are used for standardised maps
     and easier comparison.
     """
+    # Ignore division by zero warning. Returns NaN.
+    np.seterr(divide='ignore')
+    
     GFED_grid = interp_GFED_grid(year,year_period,model,var,
                                  method='linear')
     GFED_grid = np.array(GFED_grid)

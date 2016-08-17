@@ -24,51 +24,28 @@ def get_grid_burnt_area(year, month_period, BA_data, grid_data, keep_time=False)
     BA = BA_data["BA."][year*12:year*12+month_period]
     BA = np.divide(BA, 100.)
     
-    burnt_area_data = np.multiply(BA, grid_data["cell_area"])
-    burnt_area_data = np.array(burnt_area_data)
-    burnt_area_data[burnt_area_data<0.]=0
+    BA = np.multiply(BA, grid_data["cell_area"])
+    BA = np.array(BA)
+    BA[BA<0.]=0
     if keep_time:
-        return burnt_area_data
-    burnt_area_data = np.sum(burnt_area_data, axis=0)
-    return burnt_area_data
+        return BA
+    BA = np.sum(BA, axis=0)
+    return BA
     
 def get_global_BA_yearly(year, BA_data, grid_data):
     BA_grid = get_grid_burnt_area(year, 12, BA_data, grid_data)
     burnt_area = np.sum(BA_grid)
     return burnt_area
-    
-    
-def plot_global_BA_yearly(no_years, BA_data, grid_data):
-    years = int(len(BA_data["time"])/12)
-    x_data = range(years)
-    x_data_plot = [x+1700 for x in x_data]
-    y_data = []
-    for x in x_data[-no_years:]:
-        print("%.2f" % ((x-x_data[-no_years])/
-                float(len(x_data[-no_years:]))))
-        y_data.append(get_global_BA_yearly(x,BA_data,grid_data))
-    # Convert to millions of km^2.
-    y_data = np.array(y_data)
-    y_data = np.divide(y_data, 1e12)
-    plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
-               label='LPJ BLAZE Results')
-    plt.ylabel('Burnt Area (millions of $km^2$)')
-    plt.xlabel('Year')
-    plt.legend()
-    plt.show()
 
-#plot_global_BA_yearly(16,BA_BLAZE, grid_BLAZE)
-#print get_global_BA_yearly(300, BA_BLAZE, grid_BLAZE)
 
- 
 #
 # Carbon Emissions Analysis
 #
 
 
-def get_grid_emissions(year_start, month_period, emis_data, grid_data,
+def get_grid_emissions(year, month_period, emis_data, grid_data,
                      time_data, keep_time=False):
-    time = int(year_start*12)
+    time = int(year*12)
     days_per_month = []
     for i in range(month_period):
         if time+i+1 < len(time_data["time"]):
@@ -80,50 +57,30 @@ def get_grid_emissions(year_start, month_period, emis_data, grid_data,
     # Ignore overflow warning.
     np.seterr(over='ignore')
     emis = emis_data["Cfire.monthly"][time:time+month_period]
-    emis_rate_data = np.multiply(emis, grid_data["cell_area"])
-    emis_per_month = np.multiply(emis_rate_data, 
+    emis = np.multiply(emis, grid_data["cell_area"])
+    emis= np.multiply(emis, 
                 sec_per_month[:, np.newaxis, np.newaxis])
-    emissions = np.array(emis_per_month)
-    emissions[emissions<0.]=0.
+    emis = np.array(emis)
+    emis[emis<0.]=0.
     
     if keep_time:
-        return emissions
-    emissions = np.sum(emissions, axis = 0)
-    return emissions
+        return emis
+    emis = np.sum(emis, axis = 0)
+    return emis
 
 def get_global_emissions_yearly(year, emis_data, grid_data, time_data):
-    emissions_grid = get_grid_emissions(year, 12, emis_data, grid_data, time_data)
+    emis_grid = get_grid_emissions(year, 12, emis_data, grid_data, time_data)
     emissions = np.sum(emissions_grid)
     return emissions
-   
-
-def plot_global_emissions_yearly(no_years, emis_data, grid_data, time_data):
-    years = int(len(time_data["time"])/12)
-    x_data = range(years-1)
-    x_data_plot = [x+1700 for x in x_data]
-    y_data = []
-    for x in x_data[-no_years:]:
-        print("%.2f" % ((x-x_data[-no_years])/
-                float(len(x_data[-no_years:]))))
-        y_data.append(get_global_emissions_yearly(x, emis_data, grid_data, time_data)/(10**12))
-    plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
-               label='LPJ BLAZE Results')
-    plt.ylabel('Carbon Emitted ($Pg/year$)')
-    plt.xlabel('Year')
-    plt.legend()
-    plt.show()
-
-
-#plot_global_emissions_yearly(20,emis_BLAZE,grid_BLAZE,time_data)
-#print get_global_emissions_yearly(308, emis_BLAZE, grid_BLAZE, time_data) 
 
 
 #
 # Fuel Consumption Analysis
 #
 
-def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time_data, monthly=False):
-    time = int(year_start*12)
+def get_grid_fuel_consumption(year, month_period, emis_data, BA_data, 
+                            time_data, monthly=False):
+    time = int(year*12)
     days_per_month = []
     for i in range(month_period):
         if time+i+1 < len(time_data["time"]):
@@ -137,13 +94,14 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time
     np.seterr(divide='ignore')
     
     BA = BA_data["BA."][time:time+month_period]
-    fractional_BA = np.divide(BA, 100)
+    BA = np.array(BA)
+    BA[BA<0.]=0
+    BA = np.divide(BA, 100.)
     if not monthly:
-        fractional_BA = np.sum(fractional_BA, axis=0)
-    inverse_BA = 1./np.array(fractional_BA)
+        BA = np.sum(BA, axis=0)
+    inv_BA = 1./BA
     # Remove infinities due to division by 0.
-    inverse_BA[inverse_BA == np.inf] = 0
-    inverse_BA[inverse_BA<0.]=0.
+    inv_BA[inv_BA == np.inf] = 0
     
     
     emis = emis_data["Cfire.monthly"][time:time+month_period]
@@ -154,7 +112,7 @@ def get_grid_fuel_consumption(year_start, month_period, emis_data, BA_data, time
     emis = np.array(emis)
     emis[emis<0.]=0.    
     
-    fuel_consumption = np.multiply(emis,inverse_BA)
+    fuel_consumption = np.multiply(emis,inv_BA)
     if monthly:
         fuel_consumption = np.nansum(fuel_consumption, axis = 0)
     return fuel_consumption
@@ -174,25 +132,3 @@ def get_global_mean_FC_yearly_rough(year, emis_data, BA_data, grid_data, time_da
     global_mean_FC = total_emis/total_BA
     return global_mean_FC
 
-    
-def plot_global_mean_FC_yearly(no_years, emis_data, BA_data, grid_data, time_data):
-    years = int(len(time_data["time"])/12)
-    x_data = range(years-1)
-    x_data_plot = [x+1700 for x in x_data]
-    y_data = []
-    for x in x_data[-no_years:]:
-        print("%.2f" % ((x-x_data[-no_years])/
-                float(len(x_data[-no_years:]))))
-        y_data.append(get_global_mean_FC_yearly(x, emis_data, BA_data, grid_data, time_data))
-    plt.plot(x_data_plot[-no_years:], y_data, color='r', linewidth=2.0,
-               label='LPJ BLAZE Results')
-    plt.ylabel('Fuel Consumption ($kg\, C/m^2 \,burned$)')
-    plt.xlabel('Year')
-    plt.legend()
-    plt.show()
-
-
-#print get_global_mean_FC_yearly_rough(300,emis_BLAZE,BA_BLAZE,grid_BLAZE,time_data)
-#print plot_global_mean_FC_yearly(20, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
-#print get_global_mean_FC_yearly(300, emis_BLAZE, BA_BLAZE, grid_BLAZE, time_data)
-       

@@ -27,7 +27,8 @@ def generate_maps():
     and emissions for all models in their respective folders.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']
+                'blaze', 'orchidee', 'inferno', 'spitfire',
+                'mc2','globfirm']
     var_list = ['FC','emis','BA']
     
     for model in model_list:
@@ -37,7 +38,7 @@ def generate_maps():
             fig.savefig('./figures/'+model+'/'+
                         get_var_name(var)+'_map.png')
             plt.close(fig)
-        print(model+' finished!')
+        print(model.upper()+' finished!')
     print "~Variable Maps Generated~"
 
 
@@ -47,7 +48,8 @@ def generate_diff_maps():
     and emissions for all models vs GFED in their respective folders.
     """
     model_list = ['jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']
+                'blaze', 'orchidee', 'inferno', 'spitfire',
+                'mc2','globfirm']
     var_list = ['FC','emis','BA']
     
     for model in model_list:
@@ -57,7 +59,7 @@ def generate_diff_maps():
             fig.savefig('./figures/'+model+'/'+
                         get_var_name(var)+'_diff_map.png')
             plt.close(fig)
-        print(model+' finished!')
+        print(model.upper()+' finished!')
     print "~Difference Maps Generated~"
 
 
@@ -67,7 +69,8 @@ def generate_regional_box_plots():
     and emissions for all models in their respective folders.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']
+                'blaze', 'orchidee', 'inferno', 'spitfire',
+                'mc2','globfirm']
     var_list = ['FC','emis','BA']
     
     for model in model_list:
@@ -77,7 +80,7 @@ def generate_regional_box_plots():
             fig.savefig('./figures/'+model+'/'+
                         get_var_name(var)+'_regional_boxplot.png')
             plt.close(fig)
-        print(model+' finished!')
+        print(model.upper()+' finished!')
     print "~Box Plots Generated~"
     
     
@@ -136,7 +139,7 @@ def generate_regional_temporal_plots():
         fig=temporal.plot_time_series(1997,16,var,
                         all_regions=True,save=True)
         fig.savefig('./figures/temporal_comparison/present_'+
-                   get_var_name(var)+'_global.png')
+                   get_var_name(var)+'_regional.png')
         plt.close(fig)
         print 'Plot of ', get_var_name(var), ' generated!'
     print '~Regional Temporal Plots Generated~'
@@ -155,7 +158,7 @@ def generate_standard_deviation_map():
     var_list = ['FC','emis','BA']
     # GFED resolution.
     for var in var_list:
-        fig = spatial.plot_std_map(1997,16,ref_grid='gfed',
+        fig = spatial.plot_std_map(1997,16,var,ref_grid='gfed',
                                     save=True)
         fig.savefig('./figures/spatial_comparison/'+
               get_var_name(var)+'_standard_dev_map_HIRES.png')
@@ -164,7 +167,7 @@ def generate_standard_deviation_map():
     
     # CTEM resolution. 
     for var in var_list:
-        fig = spatial.plot_std_map(1997,16,ref_grid='ctem',
+        fig = spatial.plot_std_map(1997,16,var,ref_grid='ctem',
                                     save=True)
         fig.savefig('./figures/spatial_comparison/'+
               get_var_name(var)+'_standard_dev_map_LORES.png')
@@ -208,4 +211,14 @@ def generate_multimodel_plots():
     generate_field_observations_histogram()
     print '~Multimodel Plots Generated~'
 
-#generate_multimodel_plots()
+
+def generate_all_figures():
+    """
+    Generates all figures from analysis toolkit.
+    """
+    generate_model_specific_plots()
+    generate_multimodel_plots()
+    print '~ALL FIGURES GENERATED!~'
+
+#generate_multimodel_plots() 
+#generate_all_figures()

@@ -39,8 +39,8 @@ def plot_time_series(year, year_period, var, region=0, model='all',
     to False by default.
     """
     model_list = ['gfed', 'jsbach', 'clm', 'ctem', 
-                'blaze', 'orchidee', 'inferno', 'spitfire']  
-    model_list = ['jsbach','ctem','mc2','globfirm']  
+                'blaze', 'orchidee', 'inferno', 'spitfire',
+                 'mc2','globfirm']
     if model != 'all':
         model_list = [model]
     model_names = [label.upper() for label in model_list] 
@@ -63,6 +63,7 @@ def plot_time_series(year, year_period, var, region=0, model='all',
                                     year_period),axis=1)
             data_list.append(yearly_data)
             print(model.upper() + ' finished.')
+            
     elif var == 'FC':
         for model in model_list:
             emis_grid = spt.get_regional_var_grid(year,year_period,region,
@@ -287,7 +288,7 @@ def save_table(data, year, year_period, var, region, model_list,
         print 'GFED Correlations table finished!'
     
     if corr_multimodel:
-        multimodel = np.mean(data[1:], axis=0)
+        multimodel = np.nanmean(data[1:], axis=0)
         corr_tuple = [stats.pearsonr(multimodel,model_data) 
                         for model_data in data]
         corrval = np.array([corr[0] for corr in corr_tuple])
@@ -305,5 +306,4 @@ def save_table(data, year, year_period, var, region, model_list,
         print 'Multimodel Correlations table finished!'
 
 
-#plot_time_series(1997,16,'FC')
-            
+#plot_time_series(1997,5,'FC')
